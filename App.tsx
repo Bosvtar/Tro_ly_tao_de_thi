@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES } from './constants';
 import { ExamConfig, ExamData, GeneratedQuestion, QuestionFormat, DifficultyConfig, CognitiveLevel, SelectedTopic, SubjectType, GradeType } from './types';
 import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -45,46 +46,6 @@ const App: React.FC = () => {
   const [examData, setExamData] = useState<ExamData | null>(null);
   const [showSolutions, setShowSolutions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // --- RESIZE LOGIC ---
-  const [sidebarWidth, setSidebarWidth] = useState(340); // Default width in px
-  const [isResizing, setIsResizing] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-
-  const startResizing = React.useCallback((mouseDownEvent: React.MouseEvent) => {
-    mouseDownEvent.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      // Constraints: Min 280px, Max 600px
-      const newWidth = Math.max(280, Math.min(600, e.clientX));
-      setSidebarWidth(newWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none'; // Prevent text selection while dragging
-    } else {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-  }, [isResizing]);
 
   const getVandungRatio = () => {
     const remaining = 100 - ratioBiet - ratioHieu;
@@ -369,10 +330,10 @@ const App: React.FC = () => {
 
   // --- RENDER: MAIN APP ---
   return (
-    <div className="min-h-screen print:bg-white bg-gray-50 flex flex-col">
+    <div className="min-h-screen pb-20 print:pb-0 print:bg-white bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden border-b border-gray-200 flex-none">
-        <div className="w-full px-4 py-3 flex items-center justify-between">
+      <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <button 
                     onClick={() => setStep('select')}
@@ -408,16 +369,13 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Layout Container */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative print:block print:h-auto print:overflow-visible">
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* Sidebar Configuration */}
-            <div 
-                ref={sidebarRef}
-                style={{ width: window.innerWidth >= 1024 ? sidebarWidth : '100%' }}
-                className="bg-white lg:border-r border-gray-200 h-auto lg:h-[calc(100vh-65px)] overflow-y-auto custom-scrollbar flex-none print:hidden shadow-md lg:shadow-none z-10"
-            >
-                <div className="p-5">
+            <div className="lg:col-span-4 xl:col-span-3 print:hidden sidebar">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sticky top-24 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                       <Settings className="text-indigo-600" size={20} /> Cấu hình đề thi
                     </h2>
@@ -617,17 +575,8 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            {/* Resizer Handle */}
-            <div 
-              className="w-1.5 bg-gray-200 hover:bg-indigo-400 cursor-col-resize hidden lg:flex print:hidden items-center justify-center transition-colors z-20 hover:w-2 -ml-1"
-              onMouseDown={startResizing}
-              title="Kéo để thay đổi kích thước"
-            >
-               <div className="h-8 w-0.5 bg-gray-400 rounded-full opacity-0 hover:opacity-100"></div>
-            </div>
-
             {/* Main Content Area */}
-            <div className="flex-1 p-4 lg:p-8 overflow-y-auto lg:h-[calc(100vh-65px)] custom-scrollbar print-content-container print:h-auto print:overflow-visible">
+            <div className="lg:col-span-8 xl:col-span-9">
                 {error && (
                     <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 flex items-start gap-3 mb-6 print:hidden animate-fade-in">
                         <AlertCircle className="mt-0.5 shrink-0" size={20} />
@@ -656,7 +605,7 @@ const App: React.FC = () => {
                 )}
 
                 {examData && !loading && (
-                    <div className="animate-fade-in print:w-full max-w-5xl mx-auto">
+                    <div className="animate-fade-in print:w-full">
                         {/* Exam Paper Controls */}
                         <div className="bg-indigo-900 text-white p-4 rounded-t-xl flex justify-between items-center print:hidden shadow-lg controls">
                             <div className="flex items-center gap-3">
@@ -775,6 +724,7 @@ const App: React.FC = () => {
                     </div>
                 )}
             </div>
+        </div>
       </main>
       
       <style>{`
