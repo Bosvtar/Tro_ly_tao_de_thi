@@ -24,44 +24,62 @@
       @media print {
         @page {
           size: A4;
-          margin: 2cm;
+          margin: 1.5cm;
         }
+        
+        /* Reset global styles for print */
         body {
-          background-color: white;
-          color: black;
+          background-color: white !important;
+          color: black !important;
+          height: auto !important;
+          overflow: visible !important;
         }
-        .no-print {
-          display: none !important;
-        }
-        .print-only {
+
+        /* Ensure the root application container expands */
+        #root {
+          height: auto !important;
+          overflow: visible !important;
           display: block !important;
         }
-        .page-break {
-          page-break-after: always;
-        }
-        .break-inside-avoid {
-          break-inside: avoid;
-        }
-        /* Hide all UI elements */
-        header, .sidebar, .controls {
+
+        /* Hide UI Elements */
+        header, .sidebar, .controls, .resizer-handle, .no-print {
           display: none !important;
         }
-        /* Reset container widths */
-        .max-w-6xl {
-          max-width: 100% !important;
+
+        /* Force main layout containers to be block and auto height */
+        main, .print-content-container {
+          display: block !important;
+          height: auto !important;
+          overflow: visible !important;
+          width: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
         }
-        .grid {
-          display: block !important;
+
+        /* Reset width constraints */
+        .max-w-5xl {
+          max-width: 100% !important;
         }
-        /* Card styling for print */
+
+        /* Ensure grid displays correctly */
+        .grid {
+          display: grid !important; /* Or block depending on preference, but grid usually works fine if width is 100% */
+        }
+
+        /* Card styling for print - remove shadows and borders */
         .question-card {
           border: none !important;
           box-shadow: none !important;
-          padding: 10px 0 !important;
-          margin-bottom: 10px !important;
+          padding: 5px 0 !important;
+          margin-bottom: 15px !important;
           background: transparent !important;
+          break-inside: avoid; /* Prevent splitting questions across pages */
+        }
+        
+        /* Ensure LaTeX is visible */
+        .katex {
+          color: black !important;
         }
       }
     </style>
@@ -76,10 +94,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>
