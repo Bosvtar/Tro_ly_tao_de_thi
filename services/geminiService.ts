@@ -1,6 +1,21 @@
 
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ExamConfig, GeneratedQuestion } from "../types";
+import { getApiKey } from "../lib/apiKeyStorage";
+
+// Get API key from localStorage (runtime) or env (build time)
+const getApiKeyValue = (): string => {
+  // Try localStorage first (for runtime)
+  if (typeof window !== 'undefined') {
+    const storedKey = getApiKey();
+    if (storedKey) return storedKey;
+  }
+  // Fallback to env variable (for build time / server-side)
+  return (process.env.API_KEY || process.env.GEMINI_API_KEY || '');
+};
+
+const apiKey = getApiKeyValue();
+const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
 
 const questionSchema: Schema = {
   type: Type.OBJECT,
