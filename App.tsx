@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES } from './constants';
 import { ExamConfig, ExamData, GeneratedQuestion, QuestionFormat, DifficultyConfig, CognitiveLevel, SelectedTopic, SubjectType, GradeType } from './types';
@@ -5,7 +6,7 @@ import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical, Key, X, Save, ExternalLink, CheckCircle2, Trash2 } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -45,6 +46,38 @@ const App: React.FC = () => {
   const [examData, setExamData] = useState<ExamData | null>(null);
   const [showSolutions, setShowSolutions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // --- API KEY STATE ---
+  const [userApiKey, setUserApiKey] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempKey, setTempKey] = useState('');
+
+  useEffect(() => {
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) {
+      setUserApiKey(storedKey);
+      setTempKey(''); // Don't show the key in the input when opening, for security/UI cleaness
+    }
+  }, []);
+
+  const handleSaveKey = () => {
+    if (!tempKey.trim()) {
+       if (userApiKey) {
+         setShowSettings(false); // Just close if they didn't enter anything new but have a key
+       }
+       return;
+    }
+    setUserApiKey(tempKey.trim());
+    localStorage.setItem('gemini_api_key', tempKey.trim());
+    setTempKey('');
+    setShowSettings(false);
+  };
+
+  const handleClearKey = () => {
+    localStorage.removeItem('gemini_api_key');
+    setUserApiKey('');
+    setTempKey('');
+  };
 
   // --- RESIZE LOGIC ---
   const [sidebarWidth, setSidebarWidth] = useState(340); // Default width in px
@@ -163,7 +196,7 @@ const App: React.FC = () => {
         counts: configCounts
       };
 
-      const questions = await generateExamQuestions(config);
+      const questions = await generateExamQuestions(config, userApiKey);
       
       const examCode = Math.floor(100 + Math.random() * 900).toString();
       // Generate title based on first selected chapter
@@ -179,9 +212,16 @@ const App: React.FC = () => {
         createdAt: Date.now()
       });
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Hệ thống đang bận hoặc quá tải. Vui lòng thử lại sau giây lát.");
+      // Extract error message cleanly
+      let msg = "Hệ thống đang bận hoặc quá tải.";
+      if (err.message && err.message.includes("API Key")) {
+        msg = err.message;
+      } else if (err.message) {
+        msg = "Lỗi: " + err.message;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -294,10 +334,102 @@ const App: React.FC = () => {
     setExamData({ ...examData, questions: newQuestions });
   };
 
+  // --- SETTINGS MODAL COMPONENT ---
+  const SettingsModal = () => (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-fade-in backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[500px] overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center p-5 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+             <div className="bg-indigo-100 p-2 rounded-lg">
+                <Key className="text-indigo-600" size={20} />
+             </div>
+             Cài đặt API Key
+          </h3>
+          <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
+            <X size={22} />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-5">
+          {/* Instructions Box */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+             <h4 className="text-blue-800 font-bold text-sm mb-3">Làm thế nào để lấy API Key?</h4>
+             <a 
+               href="https://aistudio.google.com/app/apikey" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-lg inline-flex items-center gap-2 w-full justify-center transition-colors mb-3 shadow-sm shadow-blue-200"
+             >
+               <ExternalLink size={16} /> Mở Google AI Studio để lấy API Key
+             </a>
+             <ol className="text-xs text-blue-700 space-y-1.5 list-decimal list-inside pl-1">
+                <li>Đăng nhập bằng tài khoản Google.</li>
+                <li>Click "Create API Key" hoặc chọn key có sẵn.</li>
+                <li>Copy API key và paste vào ô bên dưới.</li>
+             </ol>
+          </div>
+
+          {/* Status Indicator */}
+          {userApiKey ? (
+              <div className="bg-green-50 border border-green-100 rounded-lg p-3 flex items-center gap-2 text-green-700 text-sm font-medium">
+                  <CheckCircle2 size={18} className="text-green-600" />
+                  Đã có API key được lưu
+              </div>
+          ) : null}
+          
+          {/* Input Area */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">Gemini API Key</label>
+            <input 
+              type="password"
+              value={tempKey}
+              onChange={(e) => setTempKey(e.target.value)}
+              placeholder={userApiKey ? "Nhập API key mới để thay thế" : "AIzaSy..."}
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono text-gray-800"
+            />
+          </div>
+          
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={handleClearKey}
+              className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              {userApiKey ? 'Xóa Key' : 'Xóa & Nhập mới'}
+            </button>
+            <button 
+              onClick={handleSaveKey}
+              className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+            >
+              <Save size={18} /> Lưu API Key
+            </button>
+          </div>
+
+          <p className="text-[11px] text-gray-400 text-center">
+            API key được lưu cực bộ trên trình duyệt của bạn và không được gửi đến server nào khác ngoại trừ Google API.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   // --- RENDER: SELECTION SCREEN ---
   if (step === 'select') {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-4 relative">
+            {showSettings && <SettingsModal />}
+            
+            {/* Top Right Settings Button */}
+            <div className="absolute top-4 right-4">
+              <button 
+                onClick={() => { setTempKey(''); setShowSettings(true); }}
+                className="bg-white/80 backdrop-blur shadow-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-bold hover:bg-white hover:text-indigo-600 transition-all"
+              >
+                <Key size={16} /> {userApiKey ? 'Đã có API Key' : 'Nhập API Key'}
+              </button>
+            </div>
+
             <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center p-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 mb-4">
@@ -370,6 +502,8 @@ const App: React.FC = () => {
   // --- RENDER: MAIN APP ---
   return (
     <div className="min-h-screen print:bg-white bg-gray-50 flex flex-col">
+      {showSettings && <SettingsModal />}
+
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden border-b border-gray-200 flex-none">
         <div className="w-full px-4 py-3 flex items-center justify-between">
@@ -389,8 +523,20 @@ const App: React.FC = () => {
                     <p className="text-xs text-gray-500 font-medium mt-0.5">{selectedSubject} {selectedGrade} - GDPT 2018</p>
                 </div>
             </div>
-            {examData && (
-                <div className="flex gap-2">
+            
+            <div className="flex gap-2">
+                {!examData && (
+                   <button 
+                      onClick={() => { setTempKey(''); setShowSettings(true); }}
+                      className="text-gray-500 hover:text-indigo-600 px-2 py-1 rounded flex items-center gap-1 text-xs font-medium"
+                      title="Cài đặt API Key"
+                    >
+                      <Key size={16} /> {userApiKey ? 'Đã nhập Key' : 'Nhập Key'}
+                   </button>
+                )}
+
+                {examData && (
+                  <>
                     <button 
                         onClick={handleExportWord}
                         className="bg-blue-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-blue-700 transition-all shadow hover:shadow-lg active:scale-95 uppercase"
@@ -403,8 +549,9 @@ const App: React.FC = () => {
                     >
                         <Printer size={16} /> PDF/In
                     </button>
-                </div>
-            )}
+                  </>
+                )}
+            </div>
         </div>
       </header>
 
@@ -418,8 +565,9 @@ const App: React.FC = () => {
                 className="bg-white lg:border-r border-gray-200 h-auto lg:h-[calc(100vh-65px)] overflow-y-auto custom-scrollbar flex-none print:hidden shadow-md lg:shadow-none z-10"
             >
                 <div className="p-5">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <Settings className="text-indigo-600" size={20} /> Cấu hình đề thi
+                    <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2"><Settings className="text-indigo-600" size={20} /> Cấu hình đề thi</div>
+                      <button onClick={() => { setTempKey(''); setShowSettings(true); }} className="text-gray-400 hover:text-indigo-600 p-1"><Key size={16} /></button>
                     </h2>
 
                     {/* Mode Switch */}
@@ -634,6 +782,7 @@ const App: React.FC = () => {
                         <div>
                             <p className="font-bold">Đã xảy ra lỗi</p>
                             <p className="text-sm mt-1">{error}</p>
+                            <button onClick={() => setShowSettings(true)} className="text-xs text-indigo-600 underline mt-2 font-bold">Kiểm tra API Key</button>
                         </div>
                     </div>
                 )}
@@ -652,6 +801,12 @@ const App: React.FC = () => {
                         </div>
                         <h3 className="text-gray-900 font-bold text-xl mb-2">Chưa có đề thi nào</h3>
                         <p className="text-gray-500 text-sm max-w-xs mx-auto">Vui lòng chọn bài học, cấu hình mức độ và bấm nút "Tạo đề thi ngay".</p>
+                        <button 
+                          onClick={() => { setTempKey(''); setShowSettings(true); }} 
+                          className="mt-6 text-indigo-600 text-sm font-semibold flex items-center gap-1 hover:underline"
+                        >
+                          <Key size={14} /> Cấu hình API Key trước
+                        </button>
                     </div>
                 )}
 

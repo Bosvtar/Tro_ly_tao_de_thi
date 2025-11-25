@@ -2,9 +2,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ExamConfig, GeneratedQuestion } from "../types";
 
-const apiKey = process.env.API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
-
 const questionSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -32,7 +29,17 @@ const examResponseSchema: Schema = {
   items: questionSchema
 };
 
-export const generateExamQuestions = async (config: ExamConfig): Promise<GeneratedQuestion[]> => {
+export const generateExamQuestions = async (config: ExamConfig, userApiKey?: string): Promise<GeneratedQuestion[]> => {
+  // Determine API Key: User provided > Env variable > Throw error
+  const effectiveApiKey = userApiKey || process.env.API_KEY;
+
+  if (!effectiveApiKey) {
+    throw new Error("Vui lòng nhập Google Gemini API Key trong phần Cài đặt (biểu tượng chìa khóa) để tiếp tục.");
+  }
+
+  // Initialize client with the effective key
+  const ai = new GoogleGenAI({ apiKey: effectiveApiKey });
+
   const totalQuestions = config.counts.mcq + config.counts.short + config.counts.essay;
   
   // Format topic list for prompt
@@ -99,7 +106,7 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     });
 
     const text = response.text;
-    if (!text) throw new Error("No response text received");
+    if (!text) throw new Error("Không nhận được phản hồi từ AI. Vui lòng thử lại.");
 
     const data = JSON.parse(text) as GeneratedQuestion[];
     
