@@ -33,13 +33,19 @@ const examResponseSchema: Schema = {
  * Supports: Vite, Create React App, Next.js, and standard process.env
  */
 export const getSystemApiKey = (): string => {
+  let key = '';
+
   // 1. Check Vite (import.meta.env)
-  // Cast to any to avoid TS2339: Property 'env' does not exist on type 'ImportMeta'.
-  const meta = import.meta as any;
-  if (typeof meta !== 'undefined' && meta.env) {
-    if (meta.env.VITE_GEMINI_API_KEY) return meta.env.VITE_GEMINI_API_KEY;
-    if (meta.env.VITE_API_KEY) return meta.env.VITE_API_KEY;
+  try {
+    const meta = import.meta as any;
+    if (meta && meta.env) {
+      if (meta.env.VITE_GEMINI_API_KEY) key = meta.env.VITE_GEMINI_API_KEY;
+      else if (meta.env.VITE_API_KEY) key = meta.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors if import.meta is not supported in the environment
   }
+  if (key) return key;
   
   // 2. Check process.env (CRA, Next.js, Node)
   if (typeof process !== 'undefined' && process.env) {
@@ -49,7 +55,7 @@ export const getSystemApiKey = (): string => {
     if (process.env.API_KEY) return process.env.API_KEY;
   }
 
-  // 3. Fallback for global window polyfills
+  // 3. Fallback for global window polyfills (often used in simple static deployments)
   if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
     return (window as any).process.env.API_KEY;
   }

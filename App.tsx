@@ -5,7 +5,7 @@ import { generateExamQuestions, getSystemApiKey } from './services/geminiService
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical, Key, X, Save, ExternalLink, CheckCircle2, Trash2, ShieldCheck } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical, Key, X, Save, ExternalLink, CheckCircle2, Trash2, ShieldCheck, Info } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -380,9 +380,14 @@ const App: React.FC = () => {
 
           {/* Status Indicator: System Key */}
           {systemApiKey && (
-             <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 flex items-center gap-2 text-purple-700 text-sm font-medium">
-                <ShieldCheck size={18} className="text-purple-600" />
-                Đã phát hiện System API Key (Vercel/Env). Bạn có thể dùng key này hoặc nhập key riêng bên dưới.
+             <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 flex flex-col gap-2 text-purple-700 text-sm font-medium">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-purple-600" />
+                  Đã phát hiện System API Key (Vercel/Env)
+                </div>
+                <p className="text-xs text-purple-600 pl-6">
+                  Bạn có thể dùng key này hoặc ghi đè bằng key cá nhân bên dưới.
+                </p>
              </div>
           )}
 
@@ -422,9 +427,12 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          <p className="text-[11px] text-gray-400 text-center">
-            API key được lưu cực bộ trên trình duyệt của bạn và không được gửi đến server nào khác ngoại trừ Google API.
-          </p>
+          <div className="text-[10px] text-gray-400 space-y-1 text-center">
+            <p>
+              Hỗ trợ Vercel Env: <code className="bg-gray-100 px-1 rounded">VITE_GEMINI_API_KEY</code>, <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_GEMINI_API_KEY</code>
+            </p>
+            <p>API key được lưu cực bộ trên trình duyệt của bạn.</p>
+          </div>
         </div>
       </div>
     </div>
