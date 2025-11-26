@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CURRICULUM, SUBJECTS, GRADES, COGNITIVE_LEVELS } from './constants';
+
+import React, { useState, useEffect } from 'react';
+import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES } from './constants';
 import { ExamConfig, ExamData, GeneratedQuestion, QuestionFormat, DifficultyConfig, CognitiveLevel, SelectedTopic, SubjectType, GradeType } from './types';
 import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical, ExternalLink, Key, ShieldCheck, Check, BookOpen } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical } from 'lucide-react';
 
-// --- MAIN APP COMPONENT ---
 const App: React.FC = () => {
   // --- Global Selection State ---
   const [step, setStep] = useState<'select' | 'configure'>('select');
@@ -46,52 +46,6 @@ const App: React.FC = () => {
   const [examData, setExamData] = useState<ExamData | null>(null);
   const [showSolutions, setShowSolutions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // --- Resizable Sidebar State ---
-  const [sidebarWidth, setSidebarWidth] = useState(350);
-  const [isResizing, setIsResizing] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
-
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  const stopResizing = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  const resize = useCallback(
-    (mouseMoveEvent: MouseEvent) => {
-      if (isResizing && sidebarRef.current) {
-        const sidebarRect = sidebarRef.current.getBoundingClientRect();
-        // Calculate width relative to the sidebar's left position
-        // Since sidebar is on the left, width is essentially mouseX
-        // However, in flex layout, we just set width. 
-        // Need to check layout context. Assuming full screen width minus mouseX if right side?
-        // Actually, just using clientX is fine for left sidebar.
-        const newWidth = mouseMoveEvent.clientX;
-        
-        // Min 280px, Max 600px
-        if (newWidth >= 280 && newWidth <= 700) {
-          setSidebarWidth(newWidth);
-        }
-      }
-    },
-    [isResizing]
-  );
-
-  useEffect(() => {
-    if (isResizing) {
-        window.addEventListener("mousemove", resize);
-        window.addEventListener("mouseup", stopResizing);
-    }
-    return () => {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
-
 
   const getVandungRatio = () => {
     const remaining = 100 - ratioBiet - ratioHieu;
@@ -170,7 +124,6 @@ const App: React.FC = () => {
         counts: configCounts
       };
 
-      // Pass userApiKey to service
       const questions = await generateExamQuestions(config);
       
       const examCode = Math.floor(100 + Math.random() * 900).toString();
@@ -187,9 +140,9 @@ const App: React.FC = () => {
         createdAt: Date.now()
       });
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || "Hệ thống đang bận hoặc quá tải. Vui lòng kiểm tra API Key.");
+      setError("Hệ thống đang bận hoặc quá tải. Vui lòng thử lại sau giây lát.");
     } finally {
       setLoading(false);
     }
@@ -371,15 +324,16 @@ const App: React.FC = () => {
                     </button>
                 </div>
             </div>
-        );
+        </div>
+    );
   }
 
-  // --- RENDER: MAIN APP (Configure & View) ---
+  // --- RENDER: MAIN APP ---
   return (
-    <div className="min-h-screen pb-20 print:pb-0 print:bg-white bg-gray-50 flex flex-col">
+    <div className="min-h-screen pb-20 print:pb-0 print:bg-white bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden border-b border-gray-200 shrink-0">
-        <div className="w-full px-4 py-3 flex items-center justify-between">
+      <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <button 
                     onClick={() => setStep('select')}
@@ -396,11 +350,8 @@ const App: React.FC = () => {
                     <p className="text-xs text-gray-500 font-medium mt-0.5">{selectedSubject} {selectedGrade} - GDPT 2018</p>
                 </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-                {/* Settings button removed to comply with API Key guidelines */}
-                {examData && (
-                    <>
+            {examData && (
+                <div className="flex gap-2">
                     <button 
                         onClick={handleExportWord}
                         className="bg-blue-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-blue-700 transition-all shadow hover:shadow-lg active:scale-95 uppercase"
@@ -411,285 +362,400 @@ const App: React.FC = () => {
                         onClick={handlePrint}
                         className="bg-gray-900 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-black transition-all shadow hover:shadow-lg active:scale-95 uppercase"
                     >
-                        <Printer size={16} /> In đề
+                        <Printer size={16} /> PDF/In
                     </button>
-                    </>
-                )}
-            </div>
+                </div>
+            )}
         </div>
       </header>
-      
-      {/* Main Layout (Sidebar + Content) */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        
-        {/* SIDEBAR (Configuration) */}
-        <aside 
-            ref={sidebarRef}
-            className="bg-white border-r border-gray-200 overflow-y-auto no-scrollbar shrink-0 print:hidden"
-            style={{ width: window.innerWidth >= 1024 ? sidebarWidth : '100%' }}
-        >
-          <div className="p-4 space-y-6">
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            {/* 1. Mode Selection */}
-            <div className="bg-indigo-50/50 p-1 rounded-lg flex text-sm font-semibold border border-indigo-100">
-                <button 
-                    onClick={() => setMode('full')}
-                    className={`flex-1 py-1.5 px-3 rounded-md flex items-center justify-center gap-2 transition-all ${mode === 'full' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-indigo-600'}`}
-                >
-                    <Layers size={16} /> Đề hoàn chỉnh
-                </button>
-                <button 
-                    onClick={() => setMode('quick')}
-                    className={`flex-1 py-1.5 px-3 rounded-md flex items-center justify-center gap-2 transition-all ${mode === 'quick' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-indigo-600'}`}
-                >
-                    <Zap size={16} /> Tạo nhanh
-                </button>
-            </div>
+            {/* Sidebar Configuration */}
+            <div className="lg:col-span-4 xl:col-span-3 print:hidden sidebar">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sticky top-24 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    
+                    <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <Settings className="text-indigo-600" size={20} /> Cấu hình đề thi
+                    </h2>
 
-            {/* 2. Topic Selection */}
-            <div>
-                <label className="text-sm font-bold text-gray-800 mb-2 block flex items-center gap-2">
-                    <BookOpen size={16} className="text-indigo-500" />
-                    Phạm vi kiến thức
-                </label>
-                <TopicSelector 
-                    subject={selectedSubject} 
-                    grade={selectedGrade} 
-                    selectedMap={selectedTopicsMap} 
-                    onChange={setSelectedTopicsMap} 
-                />
-            </div>
-
-            {/* 3. Difficulty */}
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Mức độ khó</label>
-                <div className="flex gap-2 mb-3">
-                    <button onClick={() => setDiffMode('fixed')} className={`flex-1 py-1 text-xs font-bold rounded ${diffMode === 'fixed' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Cố định</button>
-                    <button onClick={() => setDiffMode('ratio')} className={`flex-1 py-1 text-xs font-bold rounded ${diffMode === 'ratio' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Tỷ lệ %</button>
-                </div>
-                
-                {diffMode === 'fixed' ? (
-                    <div className="flex gap-1">
-                        {COGNITIVE_LEVELS.map(level => (
-                            <button
-                                key={level}
-                                onClick={() => setFixedLevel(level as CognitiveLevel)}
-                                className={`flex-1 py-1.5 text-xs font-medium border rounded transition-colors ${fixedLevel === level ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}`}
-                            >
-                                {level}
-                            </button>
-                        ))}
+                    {/* Mode Switch */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+                        <button 
+                            onClick={() => setMode('full')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all ${mode === 'full' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <Layers size={14} /> Đề chuẩn
+                        </button>
+                        <button 
+                            onClick={() => setMode('quick')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all ${mode === 'quick' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <Zap size={14} /> Đề nhanh
+                        </button>
                     </div>
-                ) : (
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium w-16 text-green-700">Biết ({ratioBiet}%)</span>
-                            <input type="range" className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600" value={ratioBiet} min="0" max="100" onChange={(e) => setRatioBiet(Number(e.target.value))} />
+
+                    <div className="space-y-6">
+                        {/* Topic Selection */}
+                        <TopicSelector 
+                            subject={selectedSubject}
+                            grade={selectedGrade}
+                            selectedMap={selectedTopicsMap} 
+                            onChange={setSelectedTopicsMap} 
+                        />
+
+                        {/* Difficulty Selection */}
+                        <div className="border-t border-gray-100 pt-4">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Mức độ tư duy</label>
+                            
+                            <div className="flex gap-4 mb-3 text-xs">
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input 
+                                        type="radio" name="diffMode" 
+                                        checked={diffMode === 'fixed'} 
+                                        onChange={() => setDiffMode('fixed')}
+                                        className="text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <span>Cố định</span>
+                                </label>
+                                <label className="flex items-center gap-1 cursor-pointer">
+                                    <input 
+                                        type="radio" name="diffMode" 
+                                        checked={diffMode === 'ratio'} 
+                                        onChange={() => setDiffMode('ratio')}
+                                        className="text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <span>Theo tỷ lệ</span>
+                                </label>
+                            </div>
+
+                            {diffMode === 'fixed' ? (
+                                <div className="grid grid-cols-3 gap-2">
+                                    {COGNITIVE_LEVELS.map(lvl => (
+                                        <button
+                                            key={lvl}
+                                            onClick={() => setFixedLevel(lvl as CognitiveLevel)}
+                                            className={`py-2 rounded-lg text-xs font-bold transition-all border ${
+                                                fixedLevel === lvl
+                                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            {lvl}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-green-700 font-medium">Biết: {ratioBiet}%</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="0" max="100" step="10"
+                                            value={ratioBiet}
+                                            onChange={(e) => setRatioBiet(Number(e.target.value))}
+                                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-blue-700 font-medium">Hiểu: {ratioHieu}%</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="0" max="100" step="10"
+                                            value={ratioHieu}
+                                            onChange={(e) => setRatioHieu(Number(e.target.value))}
+                                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                        />
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs font-bold pt-1 border-t border-gray-200">
+                                        <span className="text-orange-700">Vận dụng:</span>
+                                        <span className={`${getVandungRatio() < 0 ? 'text-red-500' : 'text-orange-700'}`}>
+                                            {getVandungRatio()}%
+                                        </span>
+                                    </div>
+                                    {getVandungRatio() < 0 && (
+                                        <p className="text-[10px] text-red-500 mt-1">Tổng tỷ lệ đang vượt quá 100%!</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium w-16 text-yellow-700">Hiểu ({ratioHieu}%)</span>
-                            <input type="range" className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-yellow-600" value={ratioHieu} min="0" max="100" onChange={(e) => setRatioHieu(Number(e.target.value))} />
+
+                        {/* Quantity Config */}
+                        <div className="border-t border-gray-100 pt-4">
+                        {mode === 'full' ? (
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Cấu trúc đề</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm text-gray-700">Trắc nghiệm</label>
+                                        <input 
+                                            type="number" min="0" max="40"
+                                            value={qtyMCQ}
+                                            onChange={(e) => setQtyMCQ(Number(e.target.value))}
+                                            className="w-16 text-center border border-gray-300 rounded-md p-1.5 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm text-gray-700">Trả lời ngắn</label>
+                                        <input 
+                                            type="number" min="0" max="20"
+                                            value={qtyShort}
+                                            onChange={(e) => setQtyShort(Number(e.target.value))}
+                                            className="w-16 text-center border border-gray-300 rounded-md p-1.5 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm text-gray-700">Tự luận</label>
+                                        <input 
+                                            type="number" min="0" max="10"
+                                            value={qtyEssay}
+                                            onChange={(e) => setQtyEssay(Number(e.target.value))}
+                                            className="w-16 text-center border border-gray-300 rounded-md p-1.5 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-medium"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Chọn dạng bài</label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <button 
+                                            onClick={() => setQuickType('mcq')}
+                                            className={`p-2.5 rounded-lg border text-left flex items-center justify-between transition-all ${quickType === 'mcq' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-gray-200 hover:bg-gray-50'}`}
+                                        >
+                                            <span className="text-sm font-medium">Trắc nghiệm</span>
+                                            {quickType === 'mcq' && <div className="w-2 h-2 rounded-full bg-indigo-600"></div>}
+                                        </button>
+                                        <button 
+                                            onClick={() => setQuickType('short')}
+                                            className={`p-2.5 rounded-lg border text-left flex items-center justify-between transition-all ${quickType === 'short' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-gray-200 hover:bg-gray-50'}`}
+                                        >
+                                            <span className="text-sm font-medium">Trả lời ngắn</span>
+                                            {quickType === 'short' && <div className="w-2 h-2 rounded-full bg-indigo-600"></div>}
+                                        </button>
+                                        <button 
+                                            onClick={() => setQuickType('essay')}
+                                            className={`p-2.5 rounded-lg border text-left flex items-center justify-between transition-all ${quickType === 'essay' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-gray-200 hover:bg-gray-50'}`}
+                                        >
+                                            <span className="text-sm font-medium">Tự luận</span>
+                                            {quickType === 'essay' && <div className="w-2 h-2 rounded-full bg-indigo-600"></div>}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Số lượng câu</label>
+                                    <input 
+                                        type="number" min="1" max="50"
+                                        value={quickCount}
+                                        onChange={(e) => setQuickCount(Number(e.target.value))}
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                    />
+                                </div>
+                            </div>
+                        )}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium w-16 text-red-700">Vận dụng ({getVandungRatio()}%)</span>
-                            <div className="flex-1 h-1.5 bg-red-100 rounded-lg relative overflow-hidden">
-                                <div style={{width: `${getVandungRatio()}%`}} className="absolute top-0 left-0 h-full bg-red-500"></div>
+
+                        <button
+                            onClick={generateExam}
+                            disabled={loading || (diffMode === 'ratio' && ratioBiet + ratioHieu > 100)}
+                            className={`w-full flex items-center justify-center gap-2 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-200 mt-2 ${
+                                loading || (diffMode === 'ratio' && ratioBiet + ratioHieu > 100)
+                                ? 'bg-indigo-400 cursor-not-allowed' 
+                                : 'bg-indigo-600 hover:bg-indigo-700 active:transform active:scale-98'
+                            }`}
+                        >
+                            {loading ? 'Đang khởi tạo...' : 'Tạo đề thi ngay'}
+                            {!loading && <Sparkles size={18} />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="lg:col-span-8 xl:col-span-9">
+                {error && (
+                    <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 flex items-start gap-3 mb-6 print:hidden animate-fade-in">
+                        <AlertCircle className="mt-0.5 shrink-0" size={20} />
+                        <div>
+                            <p className="font-bold">Đã xảy ra lỗi</p>
+                            <p className="text-sm mt-1">{error}</p>
+                        </div>
+                    </div>
+                )}
+
+                {loading && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                    <LoadingSpinner />
+                    <p className="text-gray-500 mt-4 text-sm animate-pulse">AI đang soạn thảo đề thi {selectedSubject} {selectedGrade}...</p>
+                  </div>
+                )}
+
+                {!examData && !loading && !error && (
+                    <div className="text-center py-24 bg-white rounded-xl border border-dashed border-gray-300 print:hidden flex flex-col items-center justify-center h-full">
+                        <div className="bg-indigo-50 p-6 rounded-full mb-4">
+                            {selectedSubject === 'Toán' ? <Calculator className="text-indigo-300" size={48} /> : (selectedSubject === 'Vật lí' ? <Zap className="text-indigo-300" size={48} /> : <FlaskConical className="text-indigo-300" size={48} />)}
+                        </div>
+                        <h3 className="text-gray-900 font-bold text-xl mb-2">Chưa có đề thi nào</h3>
+                        <p className="text-gray-500 text-sm max-w-xs mx-auto">Vui lòng chọn bài học, cấu hình mức độ và bấm nút "Tạo đề thi ngay".</p>
+                    </div>
+                )}
+
+                {examData && !loading && (
+                    <div className="animate-fade-in print:w-full">
+                        {/* Exam Paper Controls */}
+                        <div className="bg-indigo-900 text-white p-4 rounded-t-xl flex justify-between items-center print:hidden shadow-lg controls">
+                            <div className="flex items-center gap-3">
+                                <span className="font-mono bg-white/10 px-3 py-1 rounded text-sm font-medium border border-white/20">Mã: {examData.id}</span>
+                                <span className="text-sm font-light text-indigo-100 border-l border-indigo-700 pl-3 hidden sm:inline">{examData.questions.length} câu hỏi</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-white text-indigo-200 transition-colors select-none">
+                                    <div className="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="toggle" id="toggle" checked={showSolutions} onChange={(e) => setShowSolutions(e.target.checked)} className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer left-1 top-1 transition-transform duration-200 ease-in-out checked:translate-x-full checked:border-indigo-600"/>
+                                        <label htmlFor="toggle" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${showSolutions ? 'bg-indigo-500' : 'bg-gray-700'}`}></label>
+                                    </div>
+                                    <span className="hidden sm:inline">Hiện đáp án</span>
+                                </label>
+                                <div className="h-6 w-px bg-indigo-700"></div>
+                                <button onClick={generateExam} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-indigo-200 hover:text-white" title="Tạo lại đề mới">
+                                    <RefreshCw size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* The Actual Paper */}
+                        <div className="bg-white p-10 shadow-xl min-h-[800px] print:shadow-none print:p-0 print:w-full print:min-h-0 rounded-b-xl">
+                            
+                            {/* Exam Header */}
+                            <div className="border-b-2 border-black pb-4 mb-8 hidden print:block">
+                                <div className="flex justify-between items-start">
+                                    <div className="text-center w-1/3">
+                                        <h3 className="uppercase font-bold text-sm leading-tight">Phòng GD&ĐT ........................</h3>
+                                        <h4 className="font-bold text-sm mt-1">Trường THCS ........................</h4>
+                                    </div>
+                                    <div className="text-center w-1/3">
+                                        <h2 className="uppercase font-bold text-xl">ĐỀ KIỂM TRA {examData.subject.toUpperCase()} {examData.grade}</h2>
+                                        <p className="italic text-sm mt-1">{examData.title.replace('Đề kiểm tra: ', 'Chủ đề: ')}</p>
+                                        <p className="italic text-sm">Thời gian làm bài: 45 phút</p>
+                                    </div>
+                                    <div className="w-1/3 flex justify-end">
+                                        <div className="border border-black p-2 min-w-[100px] text-center">
+                                            <span className="block text-[10px] font-bold tracking-wider">MÃ ĐỀ THI</span>
+                                            <span className="text-xl font-mono font-bold">{examData.id}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-6 flex text-sm">
+                                    <div className="w-1/2">Họ và tên: ............................................................................</div>
+                                    <div className="w-1/2 text-right">Lớp: ...........</div>
+                                </div>
+                            </div>
+
+                            {/* Section: MCQ */}
+                            {examData.questions.some(q => q.type === 'mcq') && (
+                                <div className="mb-8 section-mcq">
+                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                        Phần I. Trắc nghiệm
+                                        <span className="text-sm font-normal normal-case text-gray-500 print:hidden ml-auto">Chọn đáp án đúng nhất</span>
+                                    </h3>
+                                    {examData.questions.filter(q => q.type === 'mcq').map((q, idx) => (
+                                        <QuestionCard 
+                                            key={q.id} 
+                                            data={q} 
+                                            index={idx} 
+                                            showSolution={showSolutions} 
+                                            onUpdate={(updated) => handleQuestionUpdate(updated, idx)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Section: Short Answer */}
+                            {examData.questions.some(q => q.type === 'short') && (
+                                <div className="mb-8 section-short page-break-inside-avoid">
+                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                        Phần II. Trắc nghiệm trả lời ngắn
+                                    </h3>
+                                    <p className="italic text-sm text-gray-600 mb-4 print:text-black print:mb-2 print:text-xs">
+                                        * Học sinh ghi kết quả (số hoặc biểu thức tối giản) vào ô trống.
+                                    </p>
+                                    {examData.questions.filter(q => q.type === 'short').map((q, idx) => (
+                                        <QuestionCard 
+                                            key={q.id} 
+                                            data={q} 
+                                            index={idx + examData.questions.filter(x => x.type === 'mcq').length} 
+                                            showSolution={showSolutions} 
+                                            onUpdate={(updated) => handleQuestionUpdate(updated, idx + examData.questions.filter(x => x.type === 'mcq').length)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                             {/* Section: Essay */}
+                             {examData.questions.some(q => q.type === 'essay') && (
+                                <div className="mb-8 section-essay page-break-inside-avoid">
+                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                        Phần III. Tự luận
+                                    </h3>
+                                    {examData.questions.filter(q => q.type === 'essay').map((q, idx) => (
+                                        <QuestionCard 
+                                            key={q.id} 
+                                            data={q} 
+                                            index={idx + examData.questions.filter(x => x.type !== 'essay').length} 
+                                            showSolution={showSolutions} 
+                                            onUpdate={(updated) => handleQuestionUpdate(updated, idx + examData.questions.filter(x => x.type !== 'essay').length)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="text-center mt-12 pt-4 border-t border-gray-300 hidden print:block text-sm italic">
+                                --- HẾT ---
+                                <div className="mt-2 text-[10px] text-gray-400">Đề thi được tạo tự động bởi AI Exam Gen</div>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
-
-            {/* 4. Configuration (Counts) */}
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Cấu trúc đề</label>
-                 
-                 {mode === 'full' ? (
-                     <div className="grid grid-cols-3 gap-3">
-                         <div>
-                             <label className="block text-[10px] text-gray-500 font-bold mb-1">Trắc nghiệm</label>
-                             <input type="number" min="0" max="50" className="w-full p-1.5 text-sm border border-gray-300 rounded text-center font-bold" value={qtyMCQ} onChange={(e) => setQtyMCQ(Number(e.target.value))} />
-                         </div>
-                         <div>
-                             <label className="block text-[10px] text-gray-500 font-bold mb-1">Trả lời ngắn</label>
-                             <input type="number" min="0" max="20" className="w-full p-1.5 text-sm border border-gray-300 rounded text-center font-bold" value={qtyShort} onChange={(e) => setQtyShort(Number(e.target.value))} />
-                         </div>
-                         <div>
-                             <label className="block text-[10px] text-gray-500 font-bold mb-1">Tự luận</label>
-                             <input type="number" min="0" max="10" className="w-full p-1.5 text-sm border border-gray-300 rounded text-center font-bold" value={qtyEssay} onChange={(e) => setQtyEssay(Number(e.target.value))} />
-                         </div>
-                     </div>
-                 ) : (
-                    <div className="flex gap-3">
-                        <select 
-                            className="flex-1 p-1.5 text-sm border border-gray-300 rounded bg-white"
-                            value={quickType}
-                            onChange={(e) => setQuickType(e.target.value as QuestionFormat)}
-                        >
-                            <option value="mcq">Trắc nghiệm</option>
-                            <option value="short">Trả lời ngắn</option>
-                            <option value="essay">Tự luận</option>
-                        </select>
-                        <input 
-                            type="number" min="1" max="50" 
-                            className="w-16 p-1.5 text-sm border border-gray-300 rounded text-center font-bold" 
-                            value={quickCount} 
-                            onChange={(e) => setQuickCount(Number(e.target.value))} 
-                        />
-                        <span className="text-sm flex items-center text-gray-500">câu</span>
-                    </div>
-                 )}
-            </div>
-
-            {/* Generate Button */}
-            <button 
-                onClick={generateExam}
-                disabled={loading}
-                className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-300 active:scale-95'}`}
-            >
-                {loading ? <RefreshCw className="animate-spin" /> : <Sparkles />}
-                {loading ? 'Đang khởi tạo...' : 'Tạo đề thi ngay'}
-            </button>
-          </div>
-        </aside>
-
-        {/* Resizer Handle */}
-        <div
-          className="w-1 bg-gray-100 hover:bg-indigo-400 cursor-col-resize hidden lg:flex items-center justify-center group transition-colors print:hidden z-10"
-          onMouseDown={startResizing}
-        >
-            <GripVertical size={12} className="text-gray-300 group-hover:text-white transition-colors" />
         </div>
-
-        {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto bg-gray-50/50 p-6 print:p-0 print:overflow-visible">
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700 animate-fade-in">
-                    <AlertCircle />
-                    <span className="font-medium">{error}</span>
-                </div>
-            )}
-
-            {loading ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                    <LoadingSpinner />
-                    <p className="mt-4 text-sm font-medium animate-pulse">AI đang soạn thảo đề thi dựa trên yêu cầu của bạn...</p>
-                    <p className="text-xs mt-2 text-gray-300">Quá trình này có thể mất 15-30 giây</p>
-                </div>
-            ) : !examData ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-300 p-10 text-center border-2 border-dashed border-gray-200 rounded-3xl m-4">
-                    <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-                        <FileText size={48} className="text-gray-200" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-400 mb-2">Chưa có đề thi nào</h3>
-                    <p className="text-gray-400 max-w-md">Hãy chọn chủ đề và cấu hình bên cột trái, sau đó nhấn "Tạo đề thi" để bắt đầu.</p>
-                </div>
-            ) : (
-                <div className="max-w-4xl mx-auto bg-white min-h-[29.7cm] shadow-lg print:shadow-none print:w-full">
-                    {/* Exam Header (Print Style) */}
-                    <div className="p-8 pb-4 print:p-0">
-                        <div className="hidden print:flex justify-between mb-6 font-serif">
-                             <div className="text-center w-5/12">
-                                <p className="font-bold m-0">Phòng GD&ĐT ........................</p>
-                                <p className="font-bold m-0">Trường THCS ........................</p>
-                             </div>
-                             <div className="text-center w-7/12">
-                                <h2 className="font-bold text-xl uppercase m-0">ĐỀ KIỂM TRA {examData.subject.toUpperCase()} {examData.grade}</h2>
-                                <p className="italic m-0 my-1">{examData.title}</p>
-                                <p className="m-0">Thời gian làm bài: 45 phút</p>
-                                <p className="font-bold border border-black px-2 py-0.5 inline-block mt-2 text-sm">Mã đề: {examData.id}</p>
-                             </div>
-                        </div>
-                        
-                        <div className="hidden print:block mb-6 font-serif">
-                            <p className="m-0"><b>Họ và tên:</b> ........................................................................................ <b>Lớp:</b> ..........</p>
-                            <div className="w-full border-b-2 border-black mt-2"></div>
-                        </div>
-
-                        {/* Screen Header */}
-                        <div className="print:hidden border-b border-gray-100 pb-4 mb-6 flex justify-between items-end">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">{examData.title}</h2>
-                                <div className="flex gap-4 mt-2 text-sm text-gray-500 font-medium">
-                                    <span className="flex items-center gap-1"><Layers size={14} /> {examData.questions.length} câu</span>
-                                    <span className="flex items-center gap-1"><Settings size={14} /> Mã đề: {examData.id}</span>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={() => setShowSolutions(!showSolutions)}
-                                className={`text-sm font-bold px-4 py-2 rounded-lg transition-colors border ${showSolutions ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                {showSolutions ? 'Ẩn tất cả lời giải' : 'Xem tất cả lời giải'}
-                            </button>
-                        </div>
-
-                        {/* Exam Content */}
-                        <div className="space-y-8 font-serif print:text-justify">
-                            {/* Part 1: MCQ */}
-                            {examData.questions.some(q => q.type === 'mcq') && (
-                                <div>
-                                    <h3 className="font-bold text-lg mb-4 text-indigo-900 print:text-black uppercase">I. Phần Trắc nghiệm</h3>
-                                    <div className="space-y-1">
-                                        {examData.questions
-                                            .filter(q => q.type === 'mcq')
-                                            .map((q, idx) => (
-                                            <QuestionCard 
-                                                key={q.id} 
-                                                data={q} 
-                                                index={idx} 
-                                                showSolution={showSolutions}
-                                                onUpdate={(uq) => handleQuestionUpdate(uq, examData.questions.findIndex(x => x.id === q.id))}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Part 2: Short Answer */}
-                            {examData.questions.some(q => q.type === 'short') && (
-                                <div>
-                                    <h3 className="font-bold text-lg mb-4 text-indigo-900 print:text-black uppercase mt-8 break-before-auto">II. Phần Trả lời ngắn</h3>
-                                    <div className="space-y-1">
-                                        {examData.questions
-                                            .filter(q => q.type === 'short')
-                                            .map((q, idx) => (
-                                            <QuestionCard 
-                                                key={q.id} 
-                                                data={q} 
-                                                index={idx} 
-                                                showSolution={showSolutions}
-                                                onUpdate={(uq) => handleQuestionUpdate(uq, examData.questions.findIndex(x => x.id === q.id))}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Part 3: Essay */}
-                            {examData.questions.some(q => q.type === 'essay') && (
-                                <div>
-                                    <h3 className="font-bold text-lg mb-4 text-indigo-900 print:text-black uppercase mt-8 break-before-auto">III. Phần Tự luận</h3>
-                                    <div className="space-y-1">
-                                        {examData.questions
-                                            .filter(q => q.type === 'essay')
-                                            .map((q, idx) => (
-                                            <QuestionCard 
-                                                key={q.id} 
-                                                data={q} 
-                                                index={idx} 
-                                                showSolution={showSolutions}
-                                                onUpdate={(uq) => handleQuestionUpdate(uq, examData.questions.findIndex(x => x.id === q.id))}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </main>
-      </div>
+      </main>
+      
+      <style>{`
+        .toggle-checkbox:checked {
+          right: 0;
+          border-color: #687280;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+          background-color: #4f46e5;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d1d5db; 
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af; 
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

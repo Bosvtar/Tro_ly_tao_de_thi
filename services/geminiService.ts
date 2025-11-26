@@ -1,5 +1,9 @@
+
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ExamConfig, GeneratedQuestion } from "../types";
+
+const apiKey = process.env.API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
 
 const questionSchema: Schema = {
   type: Type.OBJECT,
@@ -29,14 +33,6 @@ const examResponseSchema: Schema = {
 };
 
 export const generateExamQuestions = async (config: ExamConfig): Promise<GeneratedQuestion[]> => {
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
-    throw new Error("API Key chưa được cấu hình trong biến môi trường.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: apiKey });
-
   const totalQuestions = config.counts.mcq + config.counts.short + config.counts.essay;
   
   // Format topic list for prompt
