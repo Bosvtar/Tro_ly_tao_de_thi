@@ -1,20 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ExamConfig, GeneratedQuestion } from "../types";
-import { getApiKey } from "../lib/apiKeyStorage";
-
-// Get API key from localStorage (runtime) or env (build time)
-const getApiKeyValue = (): string => {
-  // Try localStorage first (for runtime)
-  if (typeof window !== 'undefined') {
-    const storedKey = getApiKey();
-    if (storedKey) return storedKey;
-  }
-  // Fallback to env variable (for build time / server-side)
-  return (process.env.API_KEY || process.env.GEMINI_API_KEY || '');
-};
-
-const apiKey = getApiKeyValue();
-const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
 
 const questionSchema: Schema = {
   type: Type.OBJECT,
@@ -44,8 +29,10 @@ const examResponseSchema: Schema = {
 };
 
 export const generateExamQuestions = async (config: ExamConfig, userApiKey?: string): Promise<GeneratedQuestion[]> => {
-  // Determine API Key: User provided > Env variable > Throw error
-  const effectiveApiKey = userApiKey || process.env.API_KEY;
+  // Determine API Key: User provided > Env variable (if safe) > Throw error
+  // We use a safe access check for process.env to avoid runtime errors in some browser contexts
+  const envApiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+  const effectiveApiKey = userApiKey || envApiKey;
 
   if (!effectiveApiKey) {
     throw new Error("Vui lòng nhập Google Gemini API Key trong phần Cài đặt (biểu tượng chìa khóa) để tiếp tục.");
