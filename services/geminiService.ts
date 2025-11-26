@@ -28,11 +28,39 @@ const examResponseSchema: Schema = {
   items: questionSchema
 };
 
+/**
+ * Helper to retrieve API Key from various environment sources.
+ * Supports: Vite, Create React App, Next.js, and standard process.env
+ */
+export const getSystemApiKey = (): string => {
+  // 1. Check Vite (import.meta.env)
+  // Cast to any to avoid TS2339: Property 'env' does not exist on type 'ImportMeta'.
+  const meta = import.meta as any;
+  if (typeof meta !== 'undefined' && meta.env) {
+    if (meta.env.VITE_GEMINI_API_KEY) return meta.env.VITE_GEMINI_API_KEY;
+    if (meta.env.VITE_API_KEY) return meta.env.VITE_API_KEY;
+  }
+  
+  // 2. Check process.env (CRA, Next.js, Node)
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.REACT_APP_GEMINI_API_KEY) return process.env.REACT_APP_GEMINI_API_KEY;
+    if (process.env.REACT_APP_API_KEY) return process.env.REACT_APP_API_KEY;
+    if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) return process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (process.env.API_KEY) return process.env.API_KEY;
+  }
+
+  // 3. Fallback for global window polyfills
+  if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
+    return (window as any).process.env.API_KEY;
+  }
+
+  return '';
+};
+
 export const generateExamQuestions = async (config: ExamConfig, userApiKey?: string): Promise<GeneratedQuestion[]> => {
-  // Determine API Key: User provided > Env variable (if safe) > Throw error
-  // We use a safe access check for process.env to avoid runtime errors in some browser contexts
-  const envApiKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
-  const effectiveApiKey = userApiKey || envApiKey;
+  // Priority: User Input Key > System Environment Key
+  const systemKey = getSystemApiKey();
+  const effectiveApiKey = userApiKey || systemKey;
 
   if (!effectiveApiKey) {
     throw new Error("Vui lòng nhập Google Gemini API Key trong phần Cài đặt (biểu tượng chìa khóa) để tiếp tục.");

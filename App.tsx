@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES } from './constants';
 import { ExamConfig, ExamData, GeneratedQuestion, QuestionFormat, DifficultyConfig, CognitiveLevel, SelectedTopic, SubjectType, GradeType } from './types';
-import { generateExamQuestions } from './services/geminiService';
+import { generateExamQuestions, getSystemApiKey } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical, Key, X, Save, ExternalLink, CheckCircle2, Trash2 } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical, Key, X, Save, ExternalLink, CheckCircle2, Trash2, ShieldCheck } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -49,21 +48,30 @@ const App: React.FC = () => {
 
   // --- API KEY STATE ---
   const [userApiKey, setUserApiKey] = useState('');
+  const [systemApiKey, setSystemApiKey] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [tempKey, setTempKey] = useState('');
 
   useEffect(() => {
+    // 1. Check Local Storage
     const storedKey = localStorage.getItem('gemini_api_key');
     if (storedKey) {
       setUserApiKey(storedKey);
-      setTempKey(''); // Don't show the key in the input when opening, for security/UI cleaness
+    }
+    
+    // 2. Check System/Env Key
+    const sysKey = getSystemApiKey();
+    if (sysKey) {
+      setSystemApiKey(sysKey);
     }
   }, []);
+
+  const hasAnyKey = !!userApiKey || !!systemApiKey;
 
   const handleSaveKey = () => {
     if (!tempKey.trim()) {
        if (userApiKey) {
-         setShowSettings(false); // Just close if they didn't enter anything new but have a key
+         setShowSettings(false); 
        }
        return;
     }
@@ -370,11 +378,19 @@ const App: React.FC = () => {
              </ol>
           </div>
 
-          {/* Status Indicator */}
+          {/* Status Indicator: System Key */}
+          {systemApiKey && (
+             <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 flex items-center gap-2 text-purple-700 text-sm font-medium">
+                <ShieldCheck size={18} className="text-purple-600" />
+                Đã phát hiện System API Key (Vercel/Env). Bạn có thể dùng key này hoặc nhập key riêng bên dưới.
+             </div>
+          )}
+
+          {/* Status Indicator: User Key */}
           {userApiKey ? (
               <div className="bg-green-50 border border-green-100 rounded-lg p-3 flex items-center gap-2 text-green-700 text-sm font-medium">
                   <CheckCircle2 size={18} className="text-green-600" />
-                  Đã có API key được lưu
+                  Đã có API key cá nhân được lưu
               </div>
           ) : null}
           
@@ -385,7 +401,7 @@ const App: React.FC = () => {
               type="password"
               value={tempKey}
               onChange={(e) => setTempKey(e.target.value)}
-              placeholder={userApiKey ? "Nhập API key mới để thay thế" : "AIzaSy..."}
+              placeholder={userApiKey ? "Nhập API key mới để thay thế" : (systemApiKey ? "Để trống để dùng System Key..." : "AIzaSy...")}
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all font-mono text-gray-800"
             />
           </div>
@@ -396,7 +412,7 @@ const App: React.FC = () => {
               onClick={handleClearKey}
               className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors flex items-center justify-center gap-2 text-sm"
             >
-              {userApiKey ? 'Xóa Key' : 'Xóa & Nhập mới'}
+              {userApiKey ? 'Xóa Key Cá Nhân' : 'Xóa & Nhập mới'}
             </button>
             <button 
               onClick={handleSaveKey}
@@ -424,9 +440,14 @@ const App: React.FC = () => {
             <div className="absolute top-4 right-4">
               <button 
                 onClick={() => { setTempKey(''); setShowSettings(true); }}
-                className="bg-white/80 backdrop-blur shadow-sm border border-gray-200 text-gray-600 px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-bold hover:bg-white hover:text-indigo-600 transition-all"
+                className={`backdrop-blur shadow-sm border px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-bold transition-all ${
+                    hasAnyKey 
+                    ? 'bg-green-50/80 border-green-200 text-green-700 hover:bg-green-100' 
+                    : 'bg-white/80 border-gray-200 text-gray-600 hover:bg-white hover:text-indigo-600'
+                }`}
               >
-                <Key size={16} /> {userApiKey ? 'Đã có API Key' : 'Nhập API Key'}
+                {hasAnyKey ? <ShieldCheck size={16} /> : <Key size={16} />} 
+                {hasAnyKey ? 'Đã có API Key' : 'Nhập API Key'}
               </button>
             </div>
 
@@ -528,10 +549,11 @@ const App: React.FC = () => {
                 {!examData && (
                    <button 
                       onClick={() => { setTempKey(''); setShowSettings(true); }}
-                      className="text-gray-500 hover:text-indigo-600 px-2 py-1 rounded flex items-center gap-1 text-xs font-medium"
+                      className={`px-2 py-1 rounded flex items-center gap-1 text-xs font-medium ${hasAnyKey ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-gray-500 hover:text-indigo-600'}`}
                       title="Cài đặt API Key"
                     >
-                      <Key size={16} /> {userApiKey ? 'Đã nhập Key' : 'Nhập Key'}
+                      {hasAnyKey ? <ShieldCheck size={16} /> : <Key size={16} />} 
+                      {hasAnyKey ? 'Key OK' : 'Nhập Key'}
                    </button>
                 )}
 
