@@ -4,19 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trợ lý Tạo Đề Thi Toán - Lý - Hóa THCS</title>
+    
+    <!-- Tailwind CSS (CDN for quick setup without build config overhead) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- KaTeX for LaTeX rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
     
-    <!-- Safe Polyfill for process.env (Crucial for Vercel/Browser static deployment) -->
-    <script>
-      window.process = window.process || {};
-      window.process.env = window.process.env || {};
-    </script>
-
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -33,7 +31,6 @@
           margin: 1.5cm;
         }
         
-        /* Reset global styles for print */
         body {
           background-color: white !important;
           color: black !important;
@@ -41,19 +38,16 @@
           overflow: visible !important;
         }
 
-        /* Ensure the root application container expands */
         #root {
           height: auto !important;
           overflow: visible !important;
           display: block !important;
         }
 
-        /* Hide UI Elements */
         header, .sidebar, .controls, .resizer-handle, .no-print {
           display: none !important;
         }
 
-        /* Force main layout containers to be block and auto height */
         main, .print-content-container {
           display: block !important;
           height: auto !important;
@@ -63,33 +57,29 @@
           padding: 0 !important;
         }
 
-        /* Reset width constraints */
         .max-w-5xl {
           max-width: 100% !important;
         }
 
-        /* Ensure grid displays correctly */
         .grid {
-          display: grid !important; /* Or block depending on preference, but grid usually works fine if width is 100% */
+          display: grid !important; 
         }
 
-        /* Card styling for print - remove shadows and borders */
         .question-card {
           border: none !important;
           box-shadow: none !important;
           padding: 5px 0 !important;
           margin-bottom: 15px !important;
           background: transparent !important;
-          break-inside: avoid; /* Prevent splitting questions across pages */
+          break-inside: avoid;
         }
         
-        /* Ensure LaTeX is visible */
         .katex {
           color: black !important;
         }
       }
     </style>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -105,7 +95,7 @@
 </head>
   <body>
     <div id="root"></div>
-    <!-- Entry point for Vite/Bundlers -->
+    <!-- Entry point for Vite -->
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

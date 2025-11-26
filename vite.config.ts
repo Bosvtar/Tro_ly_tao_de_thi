@@ -5,7 +5,12 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Some libraries might rely on process.env
+    // This polyfill prevents "process is not defined" errors in the browser
+    // allowing the shared service code to work seamlessly.
     'process.env': {} 
+  },
+  server: {
+    port: 3000,
+    open: true
   }
 });
