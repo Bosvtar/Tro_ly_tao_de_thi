@@ -6,7 +6,7 @@ import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, FileText, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, GripVertical } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -194,185 +194,6 @@ const App: React.FC = () => {
     window.print();
   };
 
-  // Helper to escape XML characters for Word
-  const escapeXml = (unsafe: string) => {
-    return unsafe.replace(/[<>&'"]/g, (c) => {
-        switch (c) {
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '&': return '&amp;';
-            case '\'': return '&apos;';
-            case '"': return '&quot;';
-            default: return c;
-        }
-    });
-  }
-
-  const handleExportWord = () => {
-    if (!examData) return;
-
-    // Helper to process text: Convert LaTeX to MathML and escape other XML chars
-    const processTextForWord = (text: string) => {
-        if (!text) return "";
-        // 1. Process LaTeX parts
-        const parts = text.split(/(\$[^$]+\$)/g);
-        
-        const processedParts = parts.map(part => {
-             if (part.startsWith('$') && part.endsWith('$')) {
-                  const latex = part.slice(1, -1);
-                  try {
-                      if ((window as any).katex) {
-                          const mathml = (window as any).katex.renderToString(latex, {
-                              throwOnError: false,
-                              output: 'mathml'
-                          });
-                          // Extract only the <math>...</math> part
-                          const mathMatch = mathml.match(/<math[^>]*>.*<\/math>/s);
-                          if (mathMatch) {
-                              let cleanMath = mathMatch[0];
-                              // Remove annotation tag which contains raw latex
-                              cleanMath = cleanMath.replace(/<annotation encoding="application\/x-tex">.*?<\/annotation>/gs, "");
-                              // Ensure namespace
-                              if (!cleanMath.includes('xmlns="http://www.w3.org/1998/Math/MathML"')) {
-                                  cleanMath = cleanMath.replace('<math', '<math xmlns="http://www.w3.org/1998/Math/MathML"');
-                              }
-                              return cleanMath;
-                          }
-                      }
-                  } catch (e) { console.error(e); }
-                  return part; // Fallback
-             } else {
-                 // 2. Escape XML chars for non-math text
-                 // Also convert <br> to break lines if needed, but here simple text usually
-                 return escapeXml(part);
-             }
-        });
-
-        return processedParts.join("").replace(/\n/g, "<br/>");
-    };
-
-    // Build HTML content for Word
-    let bodyContent = '';
-
-    // Header
-    bodyContent += `
-        <div style="font-family: 'Times New Roman', serif; margin-bottom: 20px;">
-            <table style="width: 100%; border: none; margin-bottom: 20px;">
-                <tr>
-                    <td style="text-align: center; width: 40%; vertical-align: top;">
-                        <p style="margin: 0; font-weight: bold; font-size: 13pt;">${escapeXml("Phòng GD&ĐT")} ........................</p>
-                        <p style="margin: 0; font-weight: bold; font-size: 13pt;">${escapeXml("Trường THCS")} ........................</p>
-                    </td>
-                    <td style="text-align: center; width: 60%; vertical-align: top;">
-                        <h2 style="margin: 0; font-size: 16pt; text-transform: uppercase;">ĐỀ KIỂM TRA ${escapeXml(examData.subject.toUpperCase())} ${examData.grade}</h2>
-                        <p style="margin: 5px 0; font-style: italic; font-size: 13pt;">${escapeXml(examData.title)}</p>
-                        <p style="margin: 0; font-size: 13pt;">Thời gian: 45 phút - Mã đề: ${examData.id}</p>
-                    </td>
-                </tr>
-            </table>
-            <p style="margin-bottom: 20px; font-size: 13pt;"><b>Họ và tên:</b> .............................................................. <b>Lớp:</b> ..........</p>
-    `;
-
-    // Process questions
-    let qIndex = 1;
-    const stylePara = "font-size: 13pt; line-height: 1.3; margin-bottom: 6pt;";
-    
-    // Part I: MCQ
-    const mcqs = examData.questions.filter(q => q.type === 'mcq');
-    if (mcqs.length > 0) {
-        bodyContent += `<h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14pt;">PHẦN I. TRẮC NGHIỆM</h3>`;
-        mcqs.forEach((q) => {
-            bodyContent += `<div style="${stylePara}"><b>Câu ${qIndex++}:</b> ${processTextForWord(q.question)}</div>`;
-            if (q.options) {
-                bodyContent += `<table style="width: 100%; margin-bottom: 10px; font-size: 13pt;">`;
-                // Split 4 options into rows if they are long, or 2x2 matrix
-                bodyContent += `<tr>`;
-                q.options.forEach((opt, idx) => {
-                     // Check length to decide layout? Simple 4 rows is safest for Word or 2x2. Let's do 4 rows to be safe for formulas.
-                     // Actually user asked for 4 lines A,B,C,D
-                });
-                // Let's print as div lines for better safety with formulas
-                bodyContent += `</table>`;
-                
-                q.options.forEach((opt, idx) => {
-                     const label = String.fromCharCode(65 + idx);
-                     bodyContent += `<p style="margin: 0 0 4pt 20pt; font-size: 13pt;"><b>${label}.</b> ${processTextForWord(opt)}</p>`;
-                });
-            }
-        });
-    }
-
-    // Part II: True/False
-    const tfs = examData.questions.filter(q => q.type === 'tf');
-    if (tfs.length > 0) {
-        bodyContent += `<h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14pt;">PHẦN II. TRẮC NGHIỆM ĐÚNG SAI</h3>`;
-        tfs.forEach((q) => {
-            bodyContent += `<div style="${stylePara}"><b>Câu ${qIndex++}:</b> ${processTextForWord(q.question)}</div>`;
-            if (q.options) {
-                q.options.forEach((opt, idx) => {
-                    const label = String.fromCharCode(97 + idx); // a, b, c, d
-                    bodyContent += `<p style="margin: 0 0 4pt 20pt; font-size: 13pt;"><b>${label})</b> ${processTextForWord(opt)}</p>`;
-                });
-            }
-        });
-    }
-
-    // Part III: Short
-    const shorts = examData.questions.filter(q => q.type === 'short');
-    if (shorts.length > 0) {
-        bodyContent += `<h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14pt;">PHẦN III. TRẢ LỜI NGẮN</h3>`;
-        shorts.forEach((q) => {
-            bodyContent += `<div style="${stylePara}"><b>Câu ${qIndex++}:</b> ${processTextForWord(q.question)} <br/><br/>Trả lời: .......................................</div>`;
-        });
-    }
-
-    // Part IV: Essay
-    const essays = examData.questions.filter(q => q.type === 'essay');
-    if (essays.length > 0) {
-        bodyContent += `<h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14pt;">PHẦN IV. TỰ LUẬN</h3>`;
-        essays.forEach((q) => {
-            bodyContent += `<div style="margin-bottom: 30px; ${stylePara}"><b>Câu ${qIndex++} (${q.points} điểm):</b> ${processTextForWord(q.question)} <br/><br/><br/><br/><br/></div>`;
-        });
-    }
-
-    // Solutions
-    bodyContent += `<br clear=all style='mso-special-character:line-break;page-break-before:always'>`; // Page break
-    bodyContent += `<h3 style="text-align: center; font-size: 14pt;">HƯỚNG DẪN GIẢI CHI TIẾT</h3>`;
-    
-    // Reset index for solution view? Or keep standard? Usually strictly mapped.
-    // Let's just list them sequentially.
-    examData.questions.forEach((q, i) => {
-         bodyContent += `<div style="${stylePara}"><b>Câu ${i+1}:</b> Đáp án: <b>${processTextForWord(q.answer)}</b>. <br/><i>HD: ${processTextForWord(q.solution)}</i></div>`;
-    });
-
-    bodyContent += `</div>`;
-
-    const htmlString = `<?xml version="1.0"?>
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' 
-              xmlns:w='urn:schemas-microsoft-com:office:word'
-              xmlns:m='http://schemas.microsoft.com/office/2004/12/omml'
-              xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-            <meta charset='utf-8'/>
-            <title>${escapeXml(examData.title)}</title>
-        </head>
-        <body>${bodyContent}</body>
-        </html>
-    `;
-
-    const blob = new Blob(['\ufeff', htmlString], {
-        type: 'application/msword'
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `De_${examData.subject}_${examData.grade}_${examData.id}.doc`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleQuestionUpdate = (updatedQ: GeneratedQuestion, index: number) => {
     if (!examData) return;
     const newQuestions = [...examData.questions];
@@ -477,12 +298,6 @@ const App: React.FC = () => {
             </div>
             {examData && (
                 <div className="flex gap-2">
-                    <button 
-                        onClick={handleExportWord}
-                        className="bg-blue-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-blue-700 transition-all shadow hover:shadow-lg active:scale-95 uppercase"
-                    >
-                        <FileText size={16} /> Word
-                    </button>
                     <button 
                         onClick={handlePrint}
                         className="bg-gray-900 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-black transition-all shadow hover:shadow-lg active:scale-95 uppercase"
@@ -783,38 +598,15 @@ const App: React.FC = () => {
                         {/* The Actual Paper */}
                         <div className="bg-white p-10 shadow-xl min-h-[800px] print:shadow-none print:p-0 print:w-full print:min-h-0 rounded-b-xl">
                             
-                            {/* Exam Header */}
-                            <div className="border-b-2 border-black pb-4 mb-8 hidden print:block">
-                                <div className="flex justify-between items-start">
-                                    <div className="text-center w-1/3">
-                                        <h3 className="uppercase font-bold text-sm leading-tight">Phòng GD&ĐT ........................</h3>
-                                        <h4 className="font-bold text-sm mt-1">Trường THCS ........................</h4>
-                                    </div>
-                                    <div className="text-center w-1/3">
-                                        <h2 className="uppercase font-bold text-xl">ĐỀ KIỂM TRA {examData.subject.toUpperCase()} {examData.grade}</h2>
-                                        <p className="italic text-sm mt-1">{examData.title.replace('Đề kiểm tra: ', 'Chủ đề: ')}</p>
-                                        <p className="italic text-sm">Thời gian làm bài: 45 phút</p>
-                                    </div>
-                                    <div className="w-1/3 flex justify-end">
-                                        <div className="border border-black p-2 min-w-[100px] text-center">
-                                            <span className="block text-[10px] font-bold tracking-wider">MÃ ĐỀ THI</span>
-                                            <span className="text-xl font-mono font-bold">{examData.id}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 flex text-sm">
-                                    <div className="w-1/2">Họ và tên: ............................................................................</div>
-                                    <div className="w-1/2 text-right">Lớp: ...........</div>
-                                </div>
-                            </div>
+                            {/* Exam Header REMOVED as requested */}
 
                             {/* Section: MCQ */}
                             {examData.questions.some(q => q.type === 'mcq') && (
-                                <div className="mb-8 section-mcq">
-                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
-                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                <div className="mb-4 section-mcq">
+                                    <h3 className="font-bold text-base uppercase mb-2 text-indigo-900 print:text-black border-b border-gray-200 pb-1 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-5 bg-indigo-600 rounded-full"></span>
                                         Phần I. Trắc nghiệm
-                                        <span className="text-sm font-normal normal-case text-gray-500 print:hidden ml-auto">Chọn đáp án đúng nhất</span>
+                                        <span className="text-xs font-normal normal-case text-gray-500 print:hidden ml-auto">Chọn đáp án đúng nhất</span>
                                     </h3>
                                     {examData.questions.filter(q => q.type === 'mcq').map((q, idx) => (
                                         <QuestionCard 
@@ -830,11 +622,11 @@ const App: React.FC = () => {
 
                             {/* Section: True/False */}
                             {examData.questions.some(q => q.type === 'tf') && (
-                                <div className="mb-8 section-tf">
-                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
-                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                <div className="mb-4 section-tf">
+                                    <h3 className="font-bold text-base uppercase mb-2 text-indigo-900 print:text-black border-b border-gray-200 pb-1 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-5 bg-indigo-600 rounded-full"></span>
                                         Phần II. Trắc nghiệm Đúng/Sai
-                                        <span className="text-sm font-normal normal-case text-gray-500 print:hidden ml-auto">Trả lời Đúng hoặc Sai cho mỗi ý</span>
+                                        <span className="text-xs font-normal normal-case text-gray-500 print:hidden ml-auto">Trả lời Đúng hoặc Sai cho mỗi ý</span>
                                     </h3>
                                     {examData.questions.filter(q => q.type === 'tf').map((q, idx) => (
                                         <QuestionCard 
@@ -850,13 +642,13 @@ const App: React.FC = () => {
 
                             {/* Section: Short Answer */}
                             {examData.questions.some(q => q.type === 'short') && (
-                                <div className="mb-8 section-short page-break-inside-avoid">
-                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
-                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                <div className="mb-4 section-short page-break-inside-avoid">
+                                    <h3 className="font-bold text-base uppercase mb-2 text-indigo-900 print:text-black border-b border-gray-200 pb-1 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-5 bg-indigo-600 rounded-full"></span>
                                         Phần III. Trắc nghiệm trả lời ngắn
                                     </h3>
-                                    <p className="italic text-sm text-gray-600 mb-4 print:text-black print:mb-2 print:text-xs">
-                                        * Học sinh ghi kết quả (số hoặc biểu thức tối giản) vào ô trống.
+                                    <p className="italic text-xs text-gray-600 mb-2 print:text-black print:text-xs">
+                                        * Học sinh ghi kết quả vào ô trống.
                                     </p>
                                     {examData.questions.filter(q => q.type === 'short').map((q, idx) => (
                                         <QuestionCard 
@@ -872,9 +664,9 @@ const App: React.FC = () => {
 
                              {/* Section: Essay */}
                              {examData.questions.some(q => q.type === 'essay') && (
-                                <div className="mb-8 section-essay page-break-inside-avoid">
-                                    <h3 className="font-bold text-lg uppercase mb-4 text-indigo-900 print:text-black border-b border-gray-200 pb-2 flex items-center gap-2">
-                                        <span className="print:hidden w-1 h-6 bg-indigo-600 rounded-full"></span>
+                                <div className="mb-4 section-essay page-break-inside-avoid">
+                                    <h3 className="font-bold text-base uppercase mb-2 text-indigo-900 print:text-black border-b border-gray-200 pb-1 flex items-center gap-2">
+                                        <span className="print:hidden w-1 h-5 bg-indigo-600 rounded-full"></span>
                                         Phần IV. Tự luận
                                     </h3>
                                     {examData.questions.filter(q => q.type === 'essay').map((q, idx) => (
@@ -891,7 +683,6 @@ const App: React.FC = () => {
 
                             <div className="text-center mt-12 pt-4 border-t border-gray-300 hidden print:block text-sm italic">
                                 --- HẾT ---
-                                <div className="mt-2 text-[10px] text-gray-400">Đề thi được tạo tự động bởi AI Exam Gen</div>
                             </div>
                         </div>
                     </div>
