@@ -283,37 +283,21 @@ const App: React.FC = () => {
         bodyContent += `<h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14pt;">PHẦN I. TRẮC NGHIỆM</h3>`;
         mcqs.forEach((q) => {
             bodyContent += `<div style="${stylePara}"><b>Câu ${qIndex++}:</b> ${processTextForWord(q.question)}</div>`;
-            if (q.options && q.options.length === 4) {
-                // Determine max length to choose layout
-                const maxLen = Math.max(...q.options.map(o => o.length));
+            if (q.options) {
+                bodyContent += `<table style="width: 100%; margin-bottom: 10px; font-size: 13pt;">`;
+                // Split 4 options into rows if they are long, or 2x2 matrix
+                bodyContent += `<tr>`;
+                q.options.forEach((opt, idx) => {
+                     // Check length to decide layout? Simple 4 rows is safest for Word or 2x2. Let's do 4 rows to be safe for formulas.
+                     // Actually user asked for 4 lines A,B,C,D
+                });
+                // Let's print as div lines for better safety with formulas
+                bodyContent += `</table>`;
                 
-                if (maxLen < 20) {
-                    // 1 Row, 4 Columns
-                     bodyContent += `<table style="width: 100%; margin-bottom: 10px; font-size: 13pt; border:none;"><tr>`;
-                     q.options.forEach((opt, idx) => {
-                         const label = String.fromCharCode(65 + idx);
-                         bodyContent += `<td style="padding-right:10px;"><b>${label}.</b> ${processTextForWord(opt)}</td>`;
-                     });
-                     bodyContent += `</tr></table>`;
-                } else if (maxLen < 40) {
-                    // 2 Rows, 2 Columns
-                    bodyContent += `<table style="width: 100%; margin-bottom: 10px; font-size: 13pt; border:none;">
-                        <tr>
-                            <td style="width:50%; padding-bottom:5px;"><b>A.</b> ${processTextForWord(q.options[0])}</td>
-                            <td style="width:50%; padding-bottom:5px;"><b>B.</b> ${processTextForWord(q.options[1])}</td>
-                        </tr>
-                        <tr>
-                            <td style="width:50%;"><b>C.</b> ${processTextForWord(q.options[2])}</td>
-                            <td style="width:50%;"><b>D.</b> ${processTextForWord(q.options[3])}</td>
-                        </tr>
-                    </table>`;
-                } else {
-                     // 1 Column (Standard)
-                     q.options.forEach((opt, idx) => {
-                         const label = String.fromCharCode(65 + idx);
-                         bodyContent += `<p style="margin: 0 0 4pt 20pt; font-size: 13pt;"><b>${label}.</b> ${processTextForWord(opt)}</p>`;
-                    });
-                }
+                q.options.forEach((opt, idx) => {
+                     const label = String.fromCharCode(65 + idx);
+                     bodyContent += `<p style="margin: 0 0 4pt 20pt; font-size: 13pt;"><b>${label}.</b> ${processTextForWord(opt)}</p>`;
+                });
             }
         });
     }
