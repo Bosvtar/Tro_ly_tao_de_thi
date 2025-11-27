@@ -49,7 +49,7 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết, ${hieu}% Hiểu, ${vandung}% Vận dụng.`;
   }
 
-  const prompt = `
+   const prompt = `
     Bạn là hệ thống sinh câu hỏi trắc nghiệm và tự luận chuyên nghiệp cho môn ${config.subject} lớp ${config.grade}.
 
     NHIỆM VỤ:
@@ -59,9 +59,10 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     ${topicListStr}
 
     CẤU TRÚC ĐỀ YÊU CẦU:
-    1. ${config.counts.mcq} câu Trắc nghiệm (type: 'mcq').
-    2. ${config.counts.short} câu Trả lời ngắn (type: 'short').
-    3. ${config.counts.essay} câu Tự luận (type: 'essay').
+    1. ${config.counts.mcq} câu Trắc nghiệm 4 đáp án (type: 'mcq').
+    2. ${config.counts.tf} câu Trắc nghiệm Đúng/Sai (type: 'tf').
+    3. ${config.counts.short} câu Trả lời ngắn (type: 'short').
+    4. ${config.counts.essay} câu Tự luận (type: 'essay').
 
     YÊU CẦU VỀ ĐỘ KHÓ:
     ${difficultyInstruction}
@@ -74,8 +75,15 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     
     - Với type = 'mcq': 
       * 4 phương án A,B,C,D. Chỉ 1 đúng.
+    
+    - Với type = 'tf' (Trắc nghiệm Đúng/Sai - Theo định dạng mới 2025):
+      * field 'question': Câu dẫn chính.
+      * field 'options': Mảng chứa 4 mệnh đề khẳng định (a, b, c, d).
+      * field 'answer': Chuỗi kết quả theo thứ tự a-b-c-d (Ví dụ: "Đúng - Sai - Sai - Đúng" hoặc "Đ-S-S-Đ").
+
     - Với type = 'short':
       * Học sinh chỉ cần điền kết quả (số/biểu thức/từ khóa). Đáp án duy nhất.
+    
     - Với type = 'essay':
       * Câu tự luận, kèm điểm số gợi ý (points).
     
@@ -87,6 +95,7 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     Output JSON Array only.
   `;
 
+  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -106,8 +115,8 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     return data.map((q, index) => ({
         ...q,
         id: q.id || `q-${Date.now()}-${index}`,
-        options: q.type === 'mcq' && (!q.options || q.options.length === 0) 
-          ? ["A", "B", "C", "D"]
+        options: (q.type === 'mcq' || q.type === 'tf') && (!q.options || q.options.length === 0) 
+          ? ["A", "B", "C", "D"] // Fallback if AI fails to generate options
           : q.options
     }));
 
