@@ -9,7 +9,7 @@ const questionSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     id: { type: Type.STRING },
-    type: { type: Type.STRING, enum: ["mcq", "short", "essay"] },
+    type: { type: Type.STRING, enum: ["mcq", "tf", "short", "essay"] },
     chapter: { type: Type.STRING },
     lesson: { type: Type.STRING },
     difficulty: { type: Type.STRING, enum: ["Biết", "Hiểu", "Vận dụng"] },
@@ -18,9 +18,9 @@ const questionSchema: Schema = {
       type: Type.ARRAY,
       items: { type: Type.STRING },
       nullable: true,
-      description: "Only for type 'mcq'. Must have exactly 4 options."
+      description: "For 'mcq': 4 options A-D. For 'tf': 4 statements a-d."
     },
-    answer: { type: Type.STRING },
+    answer: { type: Type.STRING, description: "For 'tf': Sequence like 'Đúng-Sai-Đúng-Sai'." },
     solution: { type: Type.STRING, description: "Detailed step-by-step solution." },
     points: { type: Type.NUMBER, nullable: true },
   },
@@ -33,7 +33,7 @@ const examResponseSchema: Schema = {
 };
 
 export const generateExamQuestions = async (config: ExamConfig): Promise<GeneratedQuestion[]> => {
-  const totalQuestions = config.counts.mcq + config.counts.short + config.counts.essay;
+  const totalQuestions = config.counts.mcq + config.counts.tf + config.counts.short + config.counts.essay;
   
   // Format topic list for prompt
   const topicListStr = config.topics.map(t => 
@@ -49,7 +49,7 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết, ${hieu}% Hiểu, ${vandung}% Vận dụng.`;
   }
 
-   const prompt = `
+  const prompt = `
     Bạn là hệ thống sinh câu hỏi trắc nghiệm và tự luận chuyên nghiệp cho môn ${config.subject} lớp ${config.grade}.
 
     NHIỆM VỤ:
@@ -95,7 +95,6 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     Output JSON Array only.
   `;
 
-  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
