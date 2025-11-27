@@ -63,6 +63,27 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
     setIsEditing(false);
   };
 
+  // Helper to determine grid layout based on option length
+  const getGridClass = (options: string[] | undefined) => {
+    if (!options || options.length === 0) return "grid-cols-1";
+    
+    // Calculate max length of options
+    const maxLen = Math.max(...options.map(o => o.length));
+    
+    // Logic: 
+    // < 15 chars: 4 columns (1 row) -> e.g. Numbers, short words
+    // < 40 chars: 2 columns (2 rows) -> e.g. Short sentences
+    // >= 40 chars: 1 column (4 rows) -> e.g. Long sentences
+    
+    if (maxLen < 15) {
+        return "grid-cols-1 md:grid-cols-4 print:grid-cols-4";
+    } else if (maxLen < 40) {
+        return "grid-cols-1 md:grid-cols-2 print:grid-cols-2";
+    } else {
+        return "grid-cols-1";
+    }
+  };
+
   // --- EDIT MODE RENDER (Raw Text for Editing) ---
   if (isEditing) {
     return (
@@ -151,12 +172,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
   const renderContent = () => {
     switch (data.type) {
       case 'mcq':
+        const gridClass = getGridClass(data.options);
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 print:grid-cols-2 print:gap-2">
+          <div className={`grid gap-3 mt-3 print:gap-y-2 print:gap-x-4 ${gridClass}`}>
             {data.options?.map((opt, idx) => (
               <div key={idx} className="flex items-center p-2 rounded border border-gray-100 print:border-none print:p-0">
-                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400">
-                  {String.fromCharCode(65 + idx)}
+                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400 print:w-auto print:h-auto print:inline-block print:mr-1">
+                  {String.fromCharCode(65 + idx)}.
                 </span>
                 <span className="text-gray-800 text-sm print:text-base">
                   <LatexRenderer content={opt} />
