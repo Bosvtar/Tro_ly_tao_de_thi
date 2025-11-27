@@ -146,10 +146,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
     switch (data.type) {
       case 'mcq':
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 print:grid-cols-2 print:gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 print:grid-cols-2 print:gap-2 ml-1">
             {data.options?.map((opt, idx) => (
               <div key={idx} className="flex items-center p-2 rounded border border-gray-100 print:border-none print:p-0">
-                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400">
+                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400 shrink-0">
                   {String.fromCharCode(65 + idx)}
                 </span>
                 <span className="text-gray-800 text-sm print:text-base">
@@ -161,7 +161,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
         );
       case 'short':
         return (
-          <div className="mt-4 mb-2 p-3 bg-gray-50 border border-dashed border-gray-300 rounded text-sm text-gray-500 print:border-b print:border-t-0 print:border-x-0 print:border-gray-400 print:bg-transparent print:rounded-none print:h-8 print:w-1/2 print:mt-1">
+          <div className="mt-4 mb-2 ml-1 p-3 bg-gray-50 border border-dashed border-gray-300 rounded text-sm text-gray-500 print:border-b print:border-t-0 print:border-x-0 print:border-gray-400 print:bg-transparent print:rounded-none print:h-8 print:w-1/2 print:mt-1">
             Điền đáp án của bạn vào đây...
           </div>
         );
@@ -175,29 +175,25 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
   };
 
   return (
-    <div className="question-card bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-4 break-inside-avoid print:shadow-none print:border-none print:p-0 print:mb-6">
-      <div className="flex justify-between items-start mb-2 group">
-        <h4 className="font-bold text-gray-900 flex items-center gap-2">
-          <span className="text-indigo-600 print:text-black whitespace-nowrap text-base">Câu {index + 1}:</span>
-          
-          {/* Display points only for essay */}
-          {data.points && (
-             <span className="text-sm font-normal text-gray-500 print:text-black italic">({data.points} điểm)</span>
-          )}
-        </h4>
-        
-        <div className="flex items-center gap-2 shrink-0">
-          <button 
-            onClick={() => setIsEditing(true)}
-            className="text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
-            title="Chỉnh sửa câu hỏi"
-          >
-            <Pencil size={14} />
-          </button>
-        </div>
+    <div className="question-card bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-4 break-inside-avoid print:shadow-none print:border-none print:p-0 print:mb-6 relative group">
+      
+      {/* Edit Button (Absolute Position) */}
+      <div className="absolute top-4 right-4 print:hidden z-10">
+        <button 
+          onClick={() => setIsEditing(true)}
+          className="text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm border border-gray-100"
+          title="Chỉnh sửa câu hỏi"
+        >
+          <Pencil size={14} />
+        </button>
       </div>
 
-      <div className="text-gray-800 text-base whitespace-pre-wrap leading-relaxed font-medium">
+      {/* Unified Question Line */}
+      <div className="text-gray-800 text-base whitespace-pre-wrap leading-relaxed font-medium pr-8">
+        <span className="font-bold text-indigo-600 print:text-black mr-2">Câu {index + 1}:</span>
+        {data.points && (
+             <span className="text-sm font-normal text-gray-500 print:text-black italic mr-1">({data.points} điểm)</span>
+        )}
         <LatexRenderer content={data.question} />
       </div>
 
