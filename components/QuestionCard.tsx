@@ -63,12 +63,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
     setIsEditing(false);
   };
 
+  // Helper to remove prefixes like "A.", "B)", "a.", "b:" from text
+  const cleanOptionText = (text: string) => {
+    if (!text) return "";
+    // Regex to match start of string with single letter A-D or a-d, followed by . ) or : and optional space
+    return text.replace(/^[A-Da-d][\.\)\:]\s*/, "");
+  };
+
   // Helper to determine grid layout based on option length
   const getGridClass = (options: string[] | undefined) => {
     if (!options || options.length === 0) return "grid-cols-1";
     
-    // Calculate max length of options
-    const maxLen = Math.max(...options.map(o => o.length));
+    // Calculate max length of options (after cleaning)
+    const maxLen = Math.max(...options.map(o => cleanOptionText(o).length));
     
     // Logic: 
     // < 15 chars: 4 columns (1 row) -> e.g. Numbers, short words
@@ -182,7 +189,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
                   {String.fromCharCode(65 + idx)}.
                 </span>
                 <span className="text-gray-800 text-sm print:text-base leading-tight">
-                  <LatexRenderer content={opt} />
+                  <LatexRenderer content={cleanOptionText(opt)} />
                 </span>
               </div>
             ))}
@@ -195,7 +202,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
                     <div key={idx} className="flex items-start gap-2 py-0.5 leading-tight">
                         <span className="font-bold text-sm w-5">{String.fromCharCode(97 + idx)})</span>
                         <div className="flex-1 text-sm text-gray-800">
-                            <LatexRenderer content={opt} />
+                            <LatexRenderer content={cleanOptionText(opt)} />
                         </div>
                     </div>
                 ))}
