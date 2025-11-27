@@ -1,5 +1,5 @@
 
-export type QuestionFormat = 'mcq' | 'short' | 'essay';
+export type QuestionFormat = 'mcq' | 'tf' | 'short' | 'essay';
 export type CognitiveLevel = 'Biết' | 'Hiểu' | 'Vận dụng';
 export type SubjectType = 'Toán' | 'Vật lí' | 'Hóa học';
 export type GradeType = '6' | '7' | '8' | '9';
@@ -11,7 +11,7 @@ export interface GeneratedQuestion {
   lesson?: string;
   difficulty: CognitiveLevel;
   question: string;
-  options?: string[]; // Only for 'mcq'
+  options?: string[]; // For 'mcq' (A,B,C,D) and 'tf' (4 statements)
   answer: string;
   solution: string;
   points?: number;
@@ -41,6 +41,7 @@ export interface ExamConfig {
   difficultyConfig: DifficultyConfig;
   counts: {
     mcq: number;
+    tf: number;
     short: number;
     essay: number;
   };
