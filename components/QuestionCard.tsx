@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GeneratedQuestion } from '../types';
 import { CheckCircle, ChevronDown, ChevronUp, Pencil, Save, X } from 'lucide-react';
@@ -85,21 +86,25 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
             />
           </div>
 
-          {editData.type === 'mcq' && editData.options && (
+          {(editData.type === 'mcq' || editData.type === 'tf') && editData.options && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Lựa chọn (A, B, C, D)</label>
-              <div className="grid grid-cols-2 gap-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                {editData.type === 'tf' ? 'Các mệnh đề (a, b, c, d)' : 'Lựa chọn (A, B, C, D)'}
+              </label>
+              <div className="grid grid-cols-1 gap-2">
                 {editData.options.map((opt, i) => (
-                  <input
-                    key={i}
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                    value={opt}
-                    onChange={(e) => {
-                      const newOptions = [...(editData.options || [])];
-                      newOptions[i] = e.target.value;
-                      setEditData({...editData, options: newOptions});
-                    }}
-                  />
+                  <div key={i} className="flex gap-2 items-center">
+                    <span className="font-bold w-4">{String.fromCharCode(97 + i)})</span>
+                    <input
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        value={opt}
+                        onChange={(e) => {
+                        const newOptions = [...(editData.options || [])];
+                        newOptions[i] = e.target.value;
+                        setEditData({...editData, options: newOptions});
+                        }}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -112,6 +117,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
                 className="w-full p-2 border border-gray-300 rounded text-sm font-bold text-green-700"
                 value={editData.answer}
                 onChange={(e) => setEditData({...editData, answer: e.target.value})}
+                placeholder={editData.type === 'tf' ? 'Đúng - Sai - Sai - Đúng' : ''}
               />
             </div>
             {editData.type === 'essay' && (
@@ -146,10 +152,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
     switch (data.type) {
       case 'mcq':
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 print:grid-cols-2 print:gap-2 ml-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 print:grid-cols-2 print:gap-2">
             {data.options?.map((opt, idx) => (
               <div key={idx} className="flex items-center p-2 rounded border border-gray-100 print:border-none print:p-0">
-                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400 shrink-0">
+                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400">
                   {String.fromCharCode(65 + idx)}
                 </span>
                 <span className="text-gray-800 text-sm print:text-base">
@@ -159,9 +165,22 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
             ))}
           </div>
         );
+      case 'tf':
+        return (
+            <div className="mt-3">
+                {data.options?.map((opt, idx) => (
+                    <div key={idx} className="flex items-start gap-2 py-1">
+                        <span className="font-bold text-sm w-5">{String.fromCharCode(97 + idx)})</span>
+                        <div className="flex-1 text-sm text-gray-800">
+                            <LatexRenderer content={opt} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
       case 'short':
         return (
-          <div className="mt-4 mb-2 ml-1 p-3 bg-gray-50 border border-dashed border-gray-300 rounded text-sm text-gray-500 print:border-b print:border-t-0 print:border-x-0 print:border-gray-400 print:bg-transparent print:rounded-none print:h-8 print:w-1/2 print:mt-1">
+          <div className="mt-4 mb-2 p-3 bg-gray-50 border border-dashed border-gray-300 rounded text-sm text-gray-500 print:border-b print:border-t-0 print:border-x-0 print:border-gray-400 print:bg-transparent print:rounded-none print:h-8 print:w-1/2 print:mt-1">
             Điền đáp án của bạn vào đây...
           </div>
         );
@@ -175,25 +194,29 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
   };
 
   return (
-    <div className="question-card bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-4 break-inside-avoid print:shadow-none print:border-none print:p-0 print:mb-6 relative group">
-      
-      {/* Edit Button (Absolute Position) */}
-      <div className="absolute top-4 right-4 print:hidden z-10">
-        <button 
-          onClick={() => setIsEditing(true)}
-          className="text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white rounded-full shadow-sm border border-gray-100"
-          title="Chỉnh sửa câu hỏi"
-        >
-          <Pencil size={14} />
-        </button>
+    <div className="question-card bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-4 break-inside-avoid print:shadow-none print:border-none print:p-0 print:mb-6">
+      <div className="flex justify-between items-start mb-2 group">
+        <h4 className="font-bold text-gray-900 flex items-center gap-2">
+          <span className="text-indigo-600 print:text-black whitespace-nowrap text-base">Câu {index + 1}:</span>
+          
+          {/* Display points only for essay */}
+          {data.points && (
+             <span className="text-sm font-normal text-gray-500 print:text-black italic">({data.points} điểm)</span>
+          )}
+        </h4>
+        
+        <div className="flex items-center gap-2 shrink-0">
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+            title="Chỉnh sửa câu hỏi"
+          >
+            <Pencil size={14} />
+          </button>
+        </div>
       </div>
 
-      {/* Unified Question Line */}
-      <div className="text-gray-800 text-base whitespace-pre-wrap leading-relaxed font-medium pr-8">
-        <span className="font-bold text-indigo-600 print:text-black mr-2">Câu {index + 1}:</span>
-        {data.points && (
-             <span className="text-sm font-normal text-gray-500 print:text-black italic mr-1">({data.points} điểm)</span>
-        )}
+      <div className="text-gray-800 text-base whitespace-pre-wrap leading-relaxed font-medium">
         <LatexRenderer content={data.question} />
       </div>
 
