@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES } from './constants';
 import { ExamConfig, ExamData, GeneratedQuestion, QuestionFormat, DifficultyConfig, CognitiveLevel, SelectedTopic, SubjectType, GradeType } from './types';
@@ -191,7 +190,29 @@ const App: React.FC = () => {
   };
 
   const handlePrint = () => {
+    if (!examData) {
+        window.print();
+        return;
+    }
+
+    // Format date: DD-MM-YYYY
+    const dateObj = new Date(examData.createdAt);
+    const dateStr = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()}`;
+    
+    // Pattern: Đề [Môn] - Lớp [Lớp] - Mã [Mã] - [Ngày]
+    // Note: Use simple ASCII or minimal special chars for better filename compatibility across OS
+    const fileName = `Đề ${examData.subject} - Lớp ${examData.grade} - Mã ${examData.id} - ${dateStr}`;
+    
+    // Set document title temporarily
+    const originalTitle = document.title;
+    document.title = fileName;
+    
     window.print();
+    
+    // Restore title after print dialog closes (approximate)
+    setTimeout(() => {
+        document.title = originalTitle;
+    }, 1000);
   };
 
   const handleQuestionUpdate = (updatedQ: GeneratedQuestion, index: number) => {
