@@ -63,6 +63,27 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
     setIsEditing(false);
   };
 
+  // Helper to determine grid layout based on option length
+  const getGridClass = (options: string[] | undefined) => {
+    if (!options || options.length === 0) return "grid-cols-1";
+    
+    // Calculate max length of options
+    const maxLen = Math.max(...options.map(o => o.length));
+    
+    // Logic: 
+    // < 15 chars: 4 columns (1 row) -> e.g. Numbers, short words
+    // < 40 chars: 2 columns (2 rows) -> e.g. Short sentences
+    // >= 40 chars: 1 column (4 rows) -> e.g. Long sentences
+    
+    if (maxLen < 15) {
+        return "grid-cols-1 md:grid-cols-4 print:grid-cols-4";
+    } else if (maxLen < 40) {
+        return "grid-cols-1 md:grid-cols-2 print:grid-cols-2";
+    } else {
+        return "grid-cols-1";
+    }
+  };
+
   // --- EDIT MODE RENDER (Raw Text for Editing) ---
   if (isEditing) {
     return (
@@ -151,14 +172,16 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
   const renderContent = () => {
     switch (data.type) {
       case 'mcq':
+        const gridClass = getGridClass(data.options);
+        // Reduced gap for tighter printing
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 print:grid-cols-2 print:gap-2">
+          <div className={`grid gap-2 mt-1 print:gap-y-1 print:gap-x-4 ${gridClass}`}>
             {data.options?.map((opt, idx) => (
-              <div key={idx} className="flex items-center p-2 rounded border border-gray-100 print:border-none print:p-0">
-                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400">
-                  {String.fromCharCode(65 + idx)}
+              <div key={idx} className="flex items-center p-1 rounded border border-gray-100 print:border-none print:p-0">
+                <span className="font-bold mr-2 text-sm w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full print:bg-transparent print:border print:border-gray-400 print:w-auto print:h-auto print:inline-block print:mr-1">
+                  {String.fromCharCode(65 + idx)}.
                 </span>
-                <span className="text-gray-800 text-sm print:text-base">
+                <span className="text-gray-800 text-sm print:text-base leading-tight">
                   <LatexRenderer content={opt} />
                 </span>
               </div>
@@ -167,9 +190,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
         );
       case 'tf':
         return (
-            <div className="mt-3">
+            <div className="mt-1">
                 {data.options?.map((opt, idx) => (
-                    <div key={idx} className="flex items-start gap-2 py-1">
+                    <div key={idx} className="flex items-start gap-2 py-0.5 leading-tight">
                         <span className="font-bold text-sm w-5">{String.fromCharCode(97 + idx)})</span>
                         <div className="flex-1 text-sm text-gray-800">
                             <LatexRenderer content={opt} />
@@ -180,13 +203,13 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
         );
       case 'short':
         return (
-          <div className="mt-4 mb-2 p-3 bg-gray-50 border border-dashed border-gray-300 rounded text-sm text-gray-500 print:border-b print:border-t-0 print:border-x-0 print:border-gray-400 print:bg-transparent print:rounded-none print:h-8 print:w-1/2 print:mt-1">
-            Điền đáp án của bạn vào đây...
+          <div className="mt-2 mb-1 p-2 bg-gray-50 border border-dashed border-gray-300 rounded text-sm text-gray-500 print:border-b print:border-t-0 print:border-x-0 print:border-gray-400 print:bg-transparent print:rounded-none print:h-6 print:w-1/2 print:mt-1">
+            Điền đáp án...
           </div>
         );
       case 'essay':
         return (
-          <div className="mt-4 h-32 border border-gray-200 rounded bg-white print:h-40 print:border print:border-gray-300 w-full"></div>
+          <div className="mt-2 h-24 border border-gray-200 rounded bg-white print:h-32 print:border print:border-gray-300 w-full"></div>
         );
       default:
         return null;
@@ -194,8 +217,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
   };
 
   return (
-    <div className="question-card bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-4 break-inside-avoid print:shadow-none print:border-none print:p-0 print:mb-6">
-      <div className="flex justify-between items-start mb-2 group">
+    // Applied mb-2 which is approx 0.5rem (8px), close to 6pt.
+    // Leading-tight is 1.25, leading-none is 1. Used leading-tight for readability.
+    <div className="question-card bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-4 break-inside-avoid print:shadow-none print:border-none print:p-0 print:mb-2 print:text-justify">
+      <div className="flex justify-between items-start mb-1 group">
         <h4 className="font-bold text-gray-900 flex items-center gap-2">
           <span className="text-indigo-600 print:text-black whitespace-nowrap text-base">Câu {index + 1}:</span>
           
@@ -216,14 +241,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
         </div>
       </div>
 
-      <div className="text-gray-800 text-base whitespace-pre-wrap leading-relaxed font-medium">
+      <div className="text-gray-800 text-base whitespace-pre-wrap leading-tight font-medium print:leading-tight">
         <LatexRenderer content={data.question} />
       </div>
 
       {renderContent()}
 
       {/* Interactive Toggle for solution (Screen only) */}
-      <div className="print:hidden mt-3 flex justify-end no-print">
+      <div className="print:hidden mt-2 flex justify-end no-print">
         <button 
           onClick={() => setLocalOpen(!localOpen)}
           className="text-xs text-indigo-500 flex items-center hover:text-indigo-700 transition-colors"
@@ -235,7 +260,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({ data, index, showSol
 
       {/* Solution Section */}
       {isOpen && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-100 rounded text-sm print:bg-transparent print:border-0 print:p-0 print:mt-2 print:text-gray-600 print:italic">
+        <div className="mt-2 p-3 bg-green-50 border border-green-100 rounded text-sm print:bg-transparent print:border-0 print:p-0 print:mt-1 print:text-gray-600 print:italic print:leading-tight">
           <div className="font-bold text-green-800 mb-1 flex items-center gap-1 print:text-black print:not-italic">
             <CheckCircle size={14} className="print:hidden" />
             <span>Đáp án: <LatexRenderer content={data.answer} /></span>
