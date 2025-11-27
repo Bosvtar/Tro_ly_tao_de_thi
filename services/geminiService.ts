@@ -75,10 +75,11 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     
     - Với type = 'mcq': 
       * 4 phương án A,B,C,D. Chỉ 1 đúng.
+      * Mảng 'options' chỉ chứa nội dung đáp án, KHÔNG chứa tiền tố "A.", "B.", "C.", "D.". Ví dụ: ["80", "90", "100", "120"] thay vì ["A. 80", "B. 90", ...].
     
     - Với type = 'tf' (Trắc nghiệm Đúng/Sai - Theo định dạng mới 2025):
       * field 'question': Câu dẫn chính.
-      * field 'options': Mảng chứa 4 mệnh đề khẳng định (a, b, c, d).
+      * field 'options': Mảng chứa 4 mệnh đề khẳng định. KHÔNG chứa tiền tố "a)", "b)".
       * field 'answer': Chuỗi kết quả theo thứ tự a-b-c-d (Ví dụ: "Đúng - Sai - Sai - Đúng" hoặc "Đ-S-S-Đ").
 
     - Với type = 'short':
