@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES } from './constants';
+import { CURRICULUM, COGNITIVE_LEVELS, SUBJECTS, GRADES, GRADE_LEVELS } from './constants';
 import { ExamConfig, ExamData, GeneratedQuestion, QuestionFormat, DifficultyConfig, CognitiveLevel, SelectedTopic, SubjectType, GradeType } from './types';
 import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
@@ -200,7 +201,6 @@ const App: React.FC = () => {
     const dateStr = `${dateObj.getDate().toString().padStart(2, '0')}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}-${dateObj.getFullYear()}`;
     
     // Pattern: Đề [Môn] - Lớp [Lớp] - Mã [Mã] - [Ngày]
-    // Note: Use simple ASCII or minimal special chars for better filename compatibility across OS
     const fileName = `Đề ${examData.subject} - Lớp ${examData.grade} - Mã ${examData.id} - ${dateStr}`;
     
     // Set document title temporarily
@@ -209,7 +209,7 @@ const App: React.FC = () => {
     
     window.print();
     
-    // Restore title after print dialog closes (approximate)
+    // Restore title after print dialog closes
     setTimeout(() => {
         document.title = originalTitle;
     }, 1000);
@@ -226,13 +226,13 @@ const App: React.FC = () => {
   if (step === 'select') {
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-4">
-            <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center p-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 mb-4">
                         <Sparkles className="text-white" size={32} />
                     </div>
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Trợ lý tạo đề thi AI</h1>
-                    <p className="text-gray-500">Chương trình Giáo dục phổ thông 2018</p>
+                    <p className="text-gray-500">Chương trình Giáo dục phổ thông 2018 (Lớp 1-12)</p>
                 </div>
 
                 <div className="space-y-8">
@@ -263,29 +263,36 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Grade Selection */}
+                    {/* Grade Selection (Grouped by Levels) */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">2. Chọn lớp</label>
-                        <div className="flex justify-between gap-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
-                            {GRADES.map((g) => (
-                                <button
-                                    key={g}
-                                    onClick={() => setSelectedGrade(g)}
-                                    className={`flex-1 py-3 rounded-lg font-bold text-lg transition-all ${
-                                        selectedGrade === g
-                                        ? 'bg-white shadow text-indigo-600 ring-2 ring-indigo-100'
-                                        : 'text-gray-400 hover:text-gray-600'
-                                    }`}
-                                >
-                                    Lớp {g}
-                                </button>
+                        <div className="space-y-3">
+                            {GRADE_LEVELS.map((level) => (
+                                <div key={level.name} className="flex flex-col sm:flex-row gap-3">
+                                    <div className="w-24 flex items-center text-sm font-bold text-gray-500 uppercase tracking-wider">{level.name}</div>
+                                    <div className="flex-1 flex gap-2">
+                                        {level.grades.map((g) => (
+                                            <button
+                                                key={g}
+                                                onClick={() => setSelectedGrade(g)}
+                                                className={`flex-1 py-2.5 rounded-lg font-bold text-lg transition-all border ${
+                                                    selectedGrade === g
+                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200'
+                                                    : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+                                                }`}
+                                            >
+                                                {g}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </div>
 
                     <button 
                         onClick={handleStartConfiguration}
-                        className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-indigo-700 hover:shadow-indigo-300 transition-all transform hover:-translate-y-1 active:translate-y-0 text-lg flex items-center justify-center gap-2"
+                        className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-indigo-700 hover:shadow-indigo-300 transition-all transform hover:-translate-y-1 active:translate-y-0 text-lg flex items-center justify-center gap-2 mt-4"
                     >
                         Tiếp tục <Settings size={20} />
                     </button>
