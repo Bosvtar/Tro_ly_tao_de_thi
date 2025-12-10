@@ -6,7 +6,7 @@ import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical } from 'lucide-react';
+import { Calculator, Sparkles, AlertCircle, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -558,6 +558,11 @@ const App: React.FC = () => {
                             {loading ? 'Đang khởi tạo...' : 'Tạo đề thi ngay'}
                             {!loading && <Sparkles size={18} />}
                         </button>
+
+                        <div className="mt-3 flex gap-2 items-start text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                          <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                          <p>Lưu ý: Nội dung được sinh bởi AI có thể chưa chính xác tuyệt đối. Vui lòng kiểm tra kỹ trước khi sử dụng.</p>
+                        </div>
                     </div>
                 </div>
             </div>
