@@ -320,7 +320,7 @@ const App: React.FC = () => {
                     {selectedSubject === 'Toán' ? <Calculator size={20} /> : (selectedSubject === 'Vật lí' ? <Zap size={20} /> : <FlaskConical size={20} />)}
                 </div>
                 <div>
-                    <h1 className="text-lg font-extrabold text-gray-900 leading-none">AI Exam Gen</h1>
+                    <h1 className="text-lg font-extrabold text-gray-900 leading-none">AI Exam Generator</h1>
                     <p className="text-xs text-gray-500 font-medium mt-0.5">{selectedSubject} {selectedGrade} - GDPT 2018</p>
                 </div>
             </div>
