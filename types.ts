@@ -2,7 +2,7 @@
 export type QuestionFormat = 'mcq' | 'tf' | 'short' | 'essay';
 export type CognitiveLevel = 'Biết' | 'Hiểu' | 'Vận dụng';
 export type SubjectType = 'Toán' | 'Vật lí' | 'Hóa học';
-export type GradeType = '6' | '7' | '8' | '9';
+export type GradeType = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
 
 export interface GeneratedQuestion {
   id: string;
