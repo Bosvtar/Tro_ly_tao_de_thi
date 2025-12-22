@@ -53,8 +53,8 @@ const prompt = `
     NHIỆM VỤ: Tạo ${totalQuestions} câu hỏi phong phú, đa dạng và có tính phân hóa cao.
 
     THAM CHIẾU PHONG CÁCH:
-    - Tham khảo các dạng bài tập sáng tạo từ "Kết nối tri thức", "Cánh diều", "Chân trời sáng tạo".
-    - Mô phỏng cách đặt vấn đề thực tế của các trang "vietjack.com", "loigiaihay.com".
+    - Tham khảo các dạng bài tập sáng tạo từ "Kết nối tri thức", "Cánh diều", "Chân trời sáng tạo" và các trang web "vietjack.com", "loigiaihay.com", "hocmai.vn", "toanmath.com".
+    - Mô phỏng cách đặt vấn đề thực tế của các trang "vietjack.com", "loigiaihay.com", "hocmai.vn", "toanmath.com".
     - Cấu trúc lời giải phải rõ ràng, logic, giúp học sinh nắm vững phương pháp giải (tương tự sách giáo viên).
 
     PHẠM VI KIẾN THỨC:
