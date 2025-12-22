@@ -2,6 +2,10 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ExamConfig, GeneratedQuestion } from "../types";
 
+const apiKey = process.env.API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
+
+
 const questionSchema: Schema = {
   type: Type.OBJECT,
   properties: {
