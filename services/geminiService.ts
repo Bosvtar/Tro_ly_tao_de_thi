@@ -2,9 +2,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ExamConfig, GeneratedQuestion } from "../types";
 
-const apiKey = process.env.API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
-
 const questionSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -32,29 +29,35 @@ const examResponseSchema: Schema = {
   items: questionSchema
 };
 
-export const generateExamQuestions = async (config: ExamConfig): Promise<GeneratedQuestion[]> => {
+export const generateExamQuestions = async (config: ExamConfig, apiKey: string): Promise<GeneratedQuestion[]> => {
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please configure it in settings.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: apiKey });
+
   const totalQuestions = config.counts.mcq + config.counts.tf + config.counts.short + config.counts.essay;
   
-  // Format topic list for prompt
   const topicListStr = config.topics.map(t => 
     `- Chương "${t.chapterName}": ${t.lessons.join(", ")}`
   ).join("\n");
 
-  // Format Difficulty Instruction
   let difficultyInstruction = "";
   if (config.difficultyConfig.mode === 'fixed') {
     difficultyInstruction = `Tất cả câu hỏi phải ở mức độ: ${config.difficultyConfig.fixedLevel}.`;
   } else {
     const { biet, hieu, vandung } = config.difficultyConfig.ratio;
-    difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết (Nhận biết), ${hieu}% Hiểu (Thông hiểu), ${vandung}% Vận dụng (Vận dụng & Vận dụng cao).`;  }
-const prompt = `
+    difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết (Nhận biết), ${hieu}% Hiểu (Thông hiểu), ${vandung}% Vận dụng (Vận dụng & Vận dụng cao).`;
+  }
+
+  const prompt = `
     Bạn là một Chuyên gia khảo thí và biên soạn đề thi cấp quốc gia, am hiểu sâu sắc chương trình GDPT 2018 môn ${config.subject} lớp ${config.grade}.
 
     NHIỆM VỤ: Tạo ${totalQuestions} câu hỏi phong phú, đa dạng và có tính phân hóa cao.
 
     THAM CHIẾU PHONG CÁCH:
-    - Tham khảo các dạng bài tập sáng tạo từ "Kết nối tri thức", "Cánh diều", "Chân trời sáng tạo" và các trang web "vietjack.com", "loigiaihay.com", "hocmai.vn", "toanmath.com".
-    - Mô phỏng cách đặt vấn đề thực tế của các trang "vietjack.com", "loigiaihay.com", "hocmai.vn", "toanmath.com".
+    - Tham khảo các dạng bài tập sáng tạo từ "Kết nối tri thức", "Cánh diều", "Chân trời sáng tạo".
+    - Mô phỏng cách đặt vấn đề thực tế của các trang "vietjack.com", "loigiaihay.com".
     - Cấu trúc lời giải phải rõ ràng, logic, giúp học sinh nắm vững phương pháp giải (tương tự sách giáo viên).
 
     PHẠM VI KIẾN THỨC:
@@ -85,7 +88,6 @@ const prompt = `
     Output JSON Array only.
   `;
 
-  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -93,7 +95,7 @@ const prompt = `
       config: {
         responseMimeType: "application/json",
         responseSchema: examResponseSchema,
-        temperature: 0.8, 
+        temperature: 0.8, // Tăng nhẹ để đa dạng nội dung
       },
     });
 
@@ -106,7 +108,7 @@ const prompt = `
         ...q,
         id: q.id || `q-${Date.now()}-${index}`,
         options: (q.type === 'mcq' || q.type === 'tf') && (!q.options || q.options.length === 0) 
-          ? ["A", "B", "C", "D"] // Fallback if AI fails to generate options
+          ? ["A", "B", "C", "D"]
           : q.options
     }));
 

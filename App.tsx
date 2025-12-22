@@ -6,7 +6,8 @@ import { generateExamQuestions } from './services/geminiService';
 import { QuestionCard } from './components/QuestionCard';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TopicSelector } from './components/TopicSelector';
-import { Calculator, Sparkles, AlertCircle, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, AlertTriangle } from 'lucide-react';
+import { ApiKeyModal } from './components/ApiKeyModal';
+import { Calculator, Sparkles, AlertCircle, Settings, RefreshCw, Layers, Zap, Printer, ArrowLeft, FlaskConical, AlertTriangle, Key } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- Global Selection State ---
@@ -47,6 +48,23 @@ const App: React.FC = () => {
   const [examData, setExamData] = useState<ExamData | null>(null);
   const [showSolutions, setShowSolutions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // API Key State
+  const [apiKey, setApiKey] = useState<string>('');
+  const [showKeyModal, setShowKeyModal] = useState(false);
+
+  // Load API Key from local storage on mount
+  useEffect(() => {
+    const storedKey = localStorage.getItem('gemini_api_key');
+    if (storedKey) {
+      setApiKey(storedKey);
+    }
+  }, []);
+
+  const handleSaveApiKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('gemini_api_key', key);
+  };
 
   // --- RESIZE LOGIC ---
   const [sidebarWidth, setSidebarWidth] = useState(340); // Default width in px
@@ -105,6 +123,12 @@ const App: React.FC = () => {
   };
 
   const generateExam = async () => {
+    // Check for API Key first
+    if (!apiKey) {
+      setShowKeyModal(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setExamData(null);
@@ -166,7 +190,7 @@ const App: React.FC = () => {
         counts: configCounts
       };
 
-      const questions = await generateExamQuestions(config);
+      const questions = await generateExamQuestions(config, apiKey);
       
       const examCode = Math.floor(100 + Math.random() * 900).toString();
       // Generate title based on first selected chapter
@@ -182,9 +206,14 @@ const App: React.FC = () => {
         createdAt: Date.now()
       });
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Hệ thống đang bận hoặc quá tải. Vui lòng thử lại sau giây lát.");
+      if (err.message && err.message.includes("API Key")) {
+        setError("API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại.");
+        setShowKeyModal(true);
+      } else {
+        setError("Hệ thống đang bận hoặc quá tải. Vui lòng thử lại sau giây lát.");
+      }
     } finally {
       setLoading(false);
     }
@@ -226,6 +255,23 @@ const App: React.FC = () => {
   if (step === 'select') {
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-4">
+             {/* Key Modal (Rendered here too just in case) */}
+             <ApiKeyModal 
+                isOpen={showKeyModal} 
+                onClose={() => setShowKeyModal(false)} 
+                onSave={handleSaveApiKey}
+                currentKey={apiKey}
+            />
+
+            <div className="absolute top-4 right-4">
+                 <button
+                    onClick={() => setShowKeyModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 text-gray-600 hover:text-indigo-600 hover:border-indigo-300 transition-all text-sm font-medium"
+                 >
+                    <Key size={16} /> {apiKey ? 'Cập nhật Key' : 'Nhập API Key'}
+                 </button>
+            </div>
+
             <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center p-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 mb-4">
@@ -305,6 +351,14 @@ const App: React.FC = () => {
   // --- RENDER: MAIN APP ---
   return (
     <div className="min-h-screen print:bg-white bg-gray-50 flex flex-col">
+      {/* API Key Modal */}
+      <ApiKeyModal 
+        isOpen={showKeyModal} 
+        onClose={() => setShowKeyModal(false)} 
+        onSave={handleSaveApiKey}
+        currentKey={apiKey}
+      />
+
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-20 print:hidden border-b border-gray-200 flex-none">
         <div className="w-full px-4 py-3 flex items-center justify-between">
@@ -324,16 +378,26 @@ const App: React.FC = () => {
                     <p className="text-xs text-gray-500 font-medium mt-0.5">{selectedSubject} {selectedGrade} - GDPT 2018</p>
                 </div>
             </div>
-            {examData && (
-                <div className="flex gap-2">
+            
+            <div className="flex items-center gap-2">
+                 <button 
+                    onClick={() => setShowKeyModal(true)}
+                    className={`p-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-all border ${apiKey ? 'bg-white text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200 animate-pulse'}`}
+                    title="Cài đặt API Key"
+                 >
+                    <Key size={16} />
+                    <span className="hidden sm:inline">{apiKey ? 'API Key: Đã lưu' : 'Nhập API Key'}</span>
+                </button>
+
+                {examData && (
                     <button 
                         onClick={handlePrint}
                         className="bg-gray-900 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-black transition-all shadow hover:shadow-lg active:scale-95 uppercase"
                     >
                         <Printer size={16} /> PDF/In
                     </button>
-                </div>
-            )}
+                )}
+            </div>
         </div>
       </header>
 
@@ -584,6 +648,14 @@ const App: React.FC = () => {
                         <div>
                             <p className="font-bold">Đã xảy ra lỗi</p>
                             <p className="text-sm mt-1">{error}</p>
+                            {error.includes("API Key") && (
+                                <button 
+                                    onClick={() => setShowKeyModal(true)}
+                                    className="text-sm font-bold text-red-800 underline mt-1"
+                                >
+                                    Cài đặt lại API Key
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -601,7 +673,16 @@ const App: React.FC = () => {
                             {selectedSubject === 'Toán' ? <Calculator className="text-indigo-300" size={48} /> : (selectedSubject === 'Vật lí' ? <Zap className="text-indigo-300" size={48} /> : <FlaskConical className="text-indigo-300" size={48} />)}
                         </div>
                         <h3 className="text-gray-900 font-bold text-xl mb-2">Chưa có đề thi nào</h3>
-                        <p className="text-gray-500 text-sm max-w-xs mx-auto">Vui lòng chọn bài học, cấu hình mức độ và bấm nút "Tạo đề thi ngay".</p>
+                        <p className="text-gray-500 text-sm max-w-xs mx-auto mb-6">Vui lòng chọn bài học, cấu hình mức độ và bấm nút "Tạo đề thi ngay".</p>
+                        
+                        {!apiKey && (
+                            <button 
+                                onClick={() => setShowKeyModal(true)}
+                                className="px-5 py-2.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg shadow-sm hover:bg-indigo-50 font-medium transition-all text-sm flex items-center gap-2"
+                            >
+                                <Key size={16} /> Nhập API Key để bắt đầu
+                            </button>
+                        )}
                     </div>
                 )}
 

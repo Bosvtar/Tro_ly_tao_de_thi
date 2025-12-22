@@ -1,5 +1,5 @@
 {
-  "name": "mathgen-6---trợ-lý-toán-6",
+  "name": "trợ-lý-tao-đề-thi-toán---lý---hóa-theo-chương-trình-gdpt-2018",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
-    "lucide-react": "^0.554.0"
+    "lucide-react": "^0.555.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
