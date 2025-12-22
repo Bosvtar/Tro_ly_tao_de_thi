@@ -48,54 +48,45 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     const { biet, hieu, vandung } = config.difficultyConfig.ratio;
     difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết, ${hieu}% Hiểu, ${vandung}% Vận dụng.`;
   }
+const prompt = `
+    Bạn là một Chuyên gia khảo thí và biên soạn đề thi cấp quốc gia, am hiểu sâu sắc chương trình GDPT 2018 môn ${config.subject} lớp ${config.grade}.
 
-  const prompt = `
-    Bạn là hệ thống sinh câu hỏi trắc nghiệm và tự luận chuyên nghiệp cho môn ${config.subject} lớp ${config.grade}.
+    NHIỆM VỤ: Tạo ${totalQuestions} câu hỏi phong phú, đa dạng và có tính phân hóa cao.
 
-    NHIỆM VỤ:
-    Tạo một danh sách gồm ${totalQuestions} câu hỏi kiểm tra dựa trên phạm vi kiến thức được cung cấp.
+    THAM CHIẾU PHONG CÁCH:
+    - Tham khảo các dạng bài tập sáng tạo từ "Kết nối tri thức", "Cánh diều", "Chân trời sáng tạo".
+    - Mô phỏng cách đặt vấn đề thực tế của các trang "vietjack.com", "loigiaihay.com".
+    - Cấu trúc lời giải phải rõ ràng, logic, giúp học sinh nắm vững phương pháp giải (tương tự sách giáo viên).
 
-    PHẠM VI KIẾN THỨC (Chỉ được chọn bài học trong danh sách này):
+    PHẠM VI KIẾN THỨC:
     ${topicListStr}
 
-    CẤU TRÚC ĐỀ YÊU CẦU:
-    1. ${config.counts.mcq} câu Trắc nghiệm 4 đáp án (type: 'mcq').
-    2. ${config.counts.tf} câu Trắc nghiệm Đúng/Sai (type: 'tf').
-    3. ${config.counts.short} câu Trả lời ngắn (type: 'short').
-    4. ${config.counts.essay} câu Tự luận (type: 'essay').
+    CẤU TRÚC ĐỀ:
+    - MCQ: ${config.counts.mcq} câu.
+    - Đúng/Sai (TF): ${config.counts.tf} câu.
+    - Trả lời ngắn: ${config.counts.short} câu.
+    - Tự luận: ${config.counts.essay} câu.
 
-    YÊU CẦU VỀ ĐỘ KHÓ:
+    ĐỘ KHÓ & PHÂN HÓA:
     ${difficultyInstruction}
-    Hãy cố gắng tuân thủ chính xác tỷ lệ phân bố mức độ khó này.
+    - Với mức "Vận dụng": Hãy tạo ra các bài toán liên hệ thực tiễn (STEM), bài toán có nhiều bước suy luận hoặc bài toán yêu cầu tư duy sáng tạo (tương tự các câu lấy điểm 9, 10 trong đề thi học kì). Tránh các câu hỏi lặp lại, sáo rỗng.
 
-    QUY TẮC SINH CÂU HỎI:
-    - field 'lesson': Phải ghi chính xác tên bài học mà câu hỏi thuộc về (lấy từ danh sách trên).
-    - field 'chapter': Ghi tên chương tương ứng.
-    - field 'difficulty': Ghi rõ "Biết", "Hiểu", hoặc "Vận dụng".
-    
-    - Với type = 'mcq': 
-      * 4 phương án A,B,C,D. Chỉ 1 đúng.
-      * Mảng 'options' chỉ chứa nội dung đáp án, KHÔNG chứa tiền tố "A.", "B.", "C.", "D.". Ví dụ: ["80", "90", "100", "120"] thay vì ["A. 80", "B. 90", ...].
-    
-    - Với type = 'tf' (Trắc nghiệm Đúng/Sai - Theo định dạng mới 2025):
-      * field 'question': Câu dẫn chính.
-      * field 'options': Mảng chứa 4 mệnh đề khẳng định. KHÔNG chứa tiền tố "a)", "b)".
-      * field 'answer': Chuỗi kết quả theo thứ tự a-b-c-d (Ví dụ: "Đúng - Sai - Sai - Đúng" hoặc "Đ-S-S-Đ").
+    QUY TẮC NỘI DUNG:
+    - 'mcq': Lựa chọn nhiễu (distractors) phải logic, dễ gây nhầm lẫn nếu học sinh hiểu sai bản chất.
+    - 'tf': Mỗi ý a, b, c, d phải khai thác một khía cạnh khác nhau của cùng một vấn đề/giả thiết.
+    - 'short': Tập trung vào kết quả số học hoặc biểu thức rút gọn nhất.
+    - 'essay': Yêu cầu trình bày lập luận.
+    - 'solution': Phải cực kỳ chi tiết, giải thích tại sao chọn đáp án đó hoặc các bước biến đổi cụ thể.
 
-    - Với type = 'short':
-      * Học sinh chỉ cần điền kết quả (số/biểu thức/từ khóa). Đáp án duy nhất.
-    
-    - Với type = 'essay':
-      * Câu tự luận, kèm điểm số gợi ý (points).
-    
-    YÊU CẦU CHUNG:
-    - Nội dung bám sát Chương trình Giáo dục phổ thông 2018 hiện hành.
-    - Ngôn ngữ tiếng Việt chuẩn mực.
-    - Sử dụng LaTeX cho công thức Toán/Lý/Hóa (ví dụ: $x^2$, $H_2O$, $F = ma$).
+    YÊU CẦU KỸ THUẬT:
+    - Sử dụng LaTeX chuẩn: $...$ cho inline, $$...$$ cho block.
+    - Công thức hóa học dùng $H_2O$, $SO_4^{2-}$.
+    - Hình học: Mô tả rõ ràng các đỉnh, góc, quan hệ song song/vuông góc.
 
     Output JSON Array only.
   `;
 
+  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
