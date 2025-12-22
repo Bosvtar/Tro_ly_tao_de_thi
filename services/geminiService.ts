@@ -46,8 +46,7 @@ export const generateExamQuestions = async (config: ExamConfig): Promise<Generat
     difficultyInstruction = `Tất cả câu hỏi phải ở mức độ: ${config.difficultyConfig.fixedLevel}.`;
   } else {
     const { biet, hieu, vandung } = config.difficultyConfig.ratio;
-    difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết, ${hieu}% Hiểu, ${vandung}% Vận dụng.`;
-  }
+    difficultyInstruction = `Phân bố mức độ khó theo tỷ lệ: ${biet}% Biết (Nhận biết), ${hieu}% Hiểu (Thông hiểu), ${vandung}% Vận dụng (Vận dụng & Vận dụng cao).`;  }
 const prompt = `
     Bạn là một Chuyên gia khảo thí và biên soạn đề thi cấp quốc gia, am hiểu sâu sắc chương trình GDPT 2018 môn ${config.subject} lớp ${config.grade}.
 
@@ -89,12 +88,12 @@ const prompt = `
   
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: examResponseSchema,
-        temperature: 0.7, 
+        temperature: 0.8, 
       },
     });
 
